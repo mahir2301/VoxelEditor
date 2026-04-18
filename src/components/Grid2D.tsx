@@ -56,6 +56,32 @@ function drawCanvas(ctx: CanvasRenderingContext2D, {
     }
   }
 
+  for (const fraction of [0.25, 0.75]) {
+    const position = Math.round(size * fraction) * cellSize;
+    ctx.strokeStyle = 'rgba(236, 243, 252, 0.26)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(position, 0);
+    ctx.lineTo(position, canvasDim);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, position);
+    ctx.lineTo(canvasDim, position);
+    ctx.stroke();
+  }
+
+  const halfPosition = Math.round(size / 2) * cellSize;
+  ctx.strokeStyle = 'rgba(236, 243, 252, 0.45)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(halfPosition, 0);
+  ctx.lineTo(halfPosition, canvasDim);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, halfPosition);
+  ctx.lineTo(canvasDim, halfPosition);
+  ctx.stroke();
+
   if (modelVoxels) {
     const silhouette = new Uint8Array(size * size);
     for (let i = 0; i < modelVoxels.length; i += 1) {
