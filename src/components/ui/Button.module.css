@@ -1,0 +1,49 @@
+.button {
+  border: 1px solid rgba(146, 170, 194, 0.4);
+  border-radius: 0.4rem;
+  background: linear-gradient(180deg, rgba(20, 34, 50, 0.92), rgba(12, 21, 34, 0.9));
+  color: #d9e5f2;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.button[data-hovered] {
+  border-color: #74a0c8;
+}
+
+.button[data-pressed] {
+  transform: translateY(1px);
+}
+
+.button[data-focus-visible] {
+  outline: 2px solid #8cc0ec;
+  outline-offset: 2px;
+}
+
+.button[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.active {
+  border-color: #5a9dd2;
+  background: linear-gradient(180deg, rgba(39, 85, 130, 0.96), rgba(24, 60, 98, 0.94));
+}
+
+.accent {
+  border-color: #e7ad63;
+  background: linear-gradient(180deg, rgba(155, 94, 41, 0.95), rgba(120, 73, 32, 0.93));
+}
+
+.success {
+  border-color: #73c28b;
+  background: linear-gradient(180deg, rgba(41, 114, 72, 0.95), rgba(27, 86, 55, 0.93));
+}
+
+.danger {
+  border-color: #cf6d6d;
+  background: linear-gradient(180deg, rgba(132, 47, 47, 0.95), rgba(92, 34, 34, 0.94));
+}

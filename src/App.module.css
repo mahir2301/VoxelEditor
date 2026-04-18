@@ -1,0 +1,68 @@
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(40, 98, 138, 0.3), transparent 40%),
+    radial-gradient(circle at 80% 10%, rgba(145, 74, 26, 0.2), transparent 35%),
+    linear-gradient(145deg, #0c131f, #141f2f 40%, #111b2c);
+}
+
+.content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.grids {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.35fr);
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.piecePreview,
+.leftBottom,
+.rightBottom {
+  min-height: 0;
+  min-width: 0;
+}
+
+.bottom {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(180px, 220px) minmax(0, 1fr);
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.centerBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #a1b2c4;
+  border: 1px solid rgba(124, 151, 180, 0.35);
+  border-radius: 0.5rem;
+  background: rgba(7, 12, 20, 0.52);
+  padding: 0.45rem 0.6rem;
+}
+
+@media (max-width: 1160px) {
+  .content {
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+
+  .grids,
+  .bottom {
+    grid-template-columns: 1fr;
+  }
+}

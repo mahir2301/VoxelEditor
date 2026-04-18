@@ -1,0 +1,35 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(132, 157, 182, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(8, 14, 24, 0.56);
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(132, 157, 182, 0.2);
+}
+
+.label {
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #c0d1e2;
+}
+
+.canvasWrap {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.canvasWrap canvas {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}

@@ -1,0 +1,59 @@
+.select {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.66rem;
+  color: #9fb3c8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.trigger {
+  min-width: 4.25rem;
+  border: 1px solid rgba(146, 170, 194, 0.4);
+  border-radius: 0.4rem;
+  background: rgba(8, 16, 28, 0.84);
+  color: #d9e5f2;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.76rem;
+  text-align: left;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.trigger[data-focus-visible] {
+  outline: 2px solid #8cc0ec;
+  outline-offset: 2px;
+}
+
+.popover {
+  border: 1px solid rgba(146, 170, 194, 0.4);
+  border-radius: 0.45rem;
+  background: rgba(8, 15, 25, 0.98);
+  padding: 0.25rem;
+  box-shadow: 0 20px 28px rgba(0, 0, 0, 0.35);
+}
+
+.list {
+  outline: none;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.option {
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.76rem;
+  color: #d9e5f2;
+  cursor: pointer;
+}
+
+.option[data-hovered],
+.option[data-selected] {
+  background: rgba(58, 98, 136, 0.35);
+}
