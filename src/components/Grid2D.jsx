@@ -59,6 +59,11 @@ export default function Grid2D({
           ctx.fillStyle = '#4a9eff';
           ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
+
+        // Grid lines
+        ctx.strokeStyle = '#2a2a4e';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
     }
 
@@ -139,25 +144,7 @@ export default function Grid2D({
       );
     }
 
-    // Draw depth indicator line
-    if (depth !== undefined && depthLabel) {
-      ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      if (depthLabel === 'X') {
-        ctx.beginPath();
-        ctx.moveTo(depth * cellSize, 0);
-        ctx.lineTo(depth * cellSize, canvasDim);
-        ctx.stroke();
-      } else if (depthLabel === 'Y') {
-        ctx.beginPath();
-        ctx.moveTo(0, depth * cellSize);
-        ctx.lineTo(canvasDim, depth * cellSize);
-        ctx.stroke();
-      }
-      ctx.setLineDash([]);
-    }
-  }, [gridData, size, canvasDim, cellSize, hoverCell, depth, depthLabel, modelVoxels, view]);
+  }, [gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view]);
 
   const getCellFromEvent = useCallback(
     (e) => {

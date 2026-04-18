@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useVoxelState } from './hooks/useVoxelState';
 import Grid2D from './components/Grid2D';
 import Viewport3D from './components/Viewport3D';
@@ -9,6 +9,7 @@ import './App.css';
 
 export default function App() {
   const { state, dispatch, getEffectiveModelVoxels, getEditingPieceVoxels } = useVoxelState();
+  const [pendingPieceId, setPendingPieceId] = useState(null);
 
   const handleToggleCell = useCallback(
     (grid, index) => dispatch({ type: 'TOGGLE_CELL', grid, index }),
@@ -30,10 +31,30 @@ export default function App() {
     [dispatch]
   );
 
+  const hasPieceVoxels = state.pieceVoxels.some((v) => v !== 0);
+
   const handleLoadPiece = useCallback(
-    (pieceId) => dispatch({ type: 'LOAD_PIECE_FOR_EDITING', pieceId }),
-    [dispatch]
+    (pieceId) => {
+      const hasGridData = state.frontGrid.some(v => v) || state.sideGrid.some(v => v) || state.topGrid.some(v => v);
+      if (hasGridData) {
+        setPendingPieceId(pieceId);
+      } else {
+        dispatch({ type: 'LOAD_PIECE_FOR_EDITING', pieceId });
+      }
+    },
+    [dispatch, state.frontGrid, state.sideGrid, state.topGrid]
   );
+
+  const confirmSwitchPiece = useCallback(() => {
+    if (pendingPieceId) {
+      dispatch({ type: 'LOAD_PIECE_FOR_EDITING', pieceId: pendingPieceId });
+      setPendingPieceId(null);
+    }
+  }, [dispatch, pendingPieceId]);
+
+  const cancelSwitchPiece = useCallback(() => {
+    setPendingPieceId(null);
+  }, []);
 
   const handleRenamePiece = useCallback(
     (pieceId, name) => dispatch({ type: 'RENAME_PIECE', pieceId, name }),
@@ -98,10 +119,27 @@ export default function App() {
 
   const effectiveModelVoxels = getEffectiveModelVoxels();
   const editingPieceVoxels = getEditingPieceVoxels();
-  const hasPieceVoxels = state.pieceVoxels.some((v) => v !== 0);
 
   return (
     <div className="app">
+      {pendingPieceId && (
+        <div className="confirm-overlay">
+          <div className="confirm-dialog">
+            <div className="confirm-dialog-text">
+              You have unsaved changes on the current piece. Switch anyway?
+            </div>
+            <div className="confirm-dialog-buttons">
+              <button className="confirm-btn confirm-btn-cancel" onClick={cancelSwitchPiece}>
+                Cancel
+              </button>
+              <button className="confirm-btn confirm-btn-ok" onClick={confirmSwitchPiece}>
+                Switch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toolbar
         state={state}
         onNewProject={handleNewProject}
