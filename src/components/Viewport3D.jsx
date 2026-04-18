@@ -61,45 +61,41 @@ function CameraController({ cameraView, resolution, controlsRef }) {
 
     switch (cameraView) {
       case 'front':
-        // Front view: camera at -Z, shows +X right, +Y up
-        x = 0; y = 0; z = -dist;
-        lookTarget = new THREE.Vector3(0, 0, 0);
+        x = 0; y = 0; z = dist;
         break;
       case 'back':
-        x = 0; y = 0; z = dist;
-        lookTarget = new THREE.Vector3(0, 0, 0);
+        x = 0; y = 0; z = -dist;
         break;
       case 'right':
-        // Side view: camera at +X, shows +Z right, +Y up
         x = dist; y = 0; z = 0;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
       case 'left':
         x = -dist; y = 0; z = 0;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
       case 'top':
         x = 0; y = dist; z = 0;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
       case 'bottom':
         x = 0; y = -dist; z = 0;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
       case 'isometric':
         x = dist; y = dist; z = dist;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
       case 'perspective':
       default:
         x = dist * 1.2; y = dist * 0.8; z = dist * 1.2;
-        lookTarget = new THREE.Vector3(0, 0, 0);
         break;
     }
 
     camera.position.set(x, y, z);
-    camera.up.set(0, 1, 0);
-    camera.lookAt(lookTarget);
+
+    if (cameraView === 'top' || cameraView === 'bottom') {
+      camera.up.set(0, 0, -1);
+    } else {
+      camera.up.set(0, 1, 0);
+    }
+
+    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
 
     controlsRef.current.target.set(0, 0, 0);
@@ -206,8 +202,8 @@ export default function Viewport3D({
 
   const initialPos = useMemo(() => {
     switch (cameraView) {
-      case 'front': return [0, 0, -dist];
-      case 'back': return [0, 0, dist];
+      case 'front': return [0, 0, dist];
+      case 'back': return [0, 0, -dist];
       case 'right': return [dist, 0, 0];
       case 'left': return [-dist, 0, 0];
       case 'top': return [0, dist, 0];

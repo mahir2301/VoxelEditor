@@ -187,8 +187,8 @@ function reducer(state, action) {
         const x = i % size;
         const y = Math.floor(i / size) % size;
         const z = Math.floor(i / (size * size));
-        frontGrid[x + y * size] = 1;
-        sideGrid[z + y * size] = 1;
+        frontGrid[x + (size - 1 - y) * size] = 1;
+        sideGrid[z + (size - 1 - y) * size] = 1;
         topGrid[x + z * size] = 1;
       }
 

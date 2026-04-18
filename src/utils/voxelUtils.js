@@ -7,7 +7,7 @@ export function computePieceVoxels(frontGrid, sideGrid, topGrid, resolution) {
     const x = i % size;
     const y = Math.floor(i / size) % size;
     const z = Math.floor(i / (size * size));
-    if (frontGrid[x + y * size] && sideGrid[z + y * size] && topGrid[x + z * size]) {
+    if (frontGrid[x + (size - 1 - y) * size] && sideGrid[z + (size - 1 - y) * size] && topGrid[x + z * size]) {
       voxels[i] = 1;
     }
   }
