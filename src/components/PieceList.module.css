@@ -1,0 +1,101 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid rgba(132, 157, 182, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(8, 14, 24, 0.56);
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(132, 157, 182, 0.2);
+}
+
+.title {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #c0d1e2;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.4rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.empty {
+  color: #87a0b8;
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.item {
+  border: 1px solid rgba(132, 157, 182, 0.24);
+  border-radius: 0.45rem;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  background: rgba(19, 33, 49, 0.75);
+}
+
+.itemEditing {
+  border-color: rgba(235, 177, 112, 0.55);
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  color: #d7e5f2;
+  font-size: 0.84rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumb {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(132, 157, 182, 0.35);
+  border-radius: 0.3rem;
+  background: #0f1a28;
+}
+
+.actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.nameField {
+  width: 100%;
+}
+
+.nameInput {
+  width: 100%;
+  border: 1px solid rgba(132, 157, 182, 0.4);
+  border-radius: 0.4rem;
+  background: rgba(6, 13, 22, 0.8);
+  color: #dce8f5;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.83rem;
+}
+
+.nameInput[data-focus-visible] {
+  outline: 2px solid #8cc0ec;
+  outline-offset: 1px;
+}

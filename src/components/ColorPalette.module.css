@@ -1,0 +1,27 @@
+.root {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  border: 1px solid rgba(132, 157, 182, 0.3);
+  border-radius: 0.5rem;
+  background: rgba(8, 14, 24, 0.56);
+  padding: 0.5rem;
+}
+
+.swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.35rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.swatch:hover,
+.swatch[data-focus-visible] {
+  border-color: rgba(216, 229, 242, 0.7);
+}
+
+.selected {
+  border-color: #f8f4d0;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.36);
+}

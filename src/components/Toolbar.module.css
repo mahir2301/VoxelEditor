@@ -1,0 +1,40 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid rgba(132, 157, 182, 0.3);
+  background: linear-gradient(180deg, rgba(16, 30, 45, 0.92), rgba(11, 23, 36, 0.94));
+}
+
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.66rem;
+  color: #9fb3c8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.separator {
+  width: 1px;
+  height: 1.65rem;
+  background: rgba(137, 161, 186, 0.25);
+}
+
+.filePicker {
+  position: relative;
+}
+
+.hiddenInput {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
