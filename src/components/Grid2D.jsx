@@ -11,6 +11,8 @@ export default function Grid2D({
   depth,
   onDepthChange,
   onViewClick,
+  modelVoxels = null,
+  view = 'front',
 }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -57,12 +59,72 @@ export default function Grid2D({
           ctx.fillStyle = '#4a9eff';
           ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
-
-        // Grid lines
-        ctx.strokeStyle = '#2a2a4e';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
+    }
+
+    // 1/4 and 1/2 subdivision lines
+    ctx.lineWidth = 1;
+    for (const frac of [0.25, 0.75]) {
+      const px = Math.round(frac * size) * cellSize;
+      const py = Math.round(frac * size) * cellSize;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, canvasDim);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(canvasDim, py);
+      ctx.stroke();
+    }
+
+    // 1/2 line (brightest)
+    const half = Math.round(size / 2) * cellSize;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(half, 0);
+    ctx.lineTo(half, canvasDim);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, half);
+    ctx.lineTo(canvasDim, half);
+    ctx.stroke();
+
+    // Model silhouette outline
+    if (modelVoxels) {
+      const sil = new Uint8Array(size * size);
+      for (let i = 0; i < modelVoxels.length; i++) {
+        if (!modelVoxels[i]) continue;
+        const mx = i % size;
+        const my = Math.floor(i / size) % size;
+        const mz = Math.floor(i / (size * size));
+        let col, row;
+        if (view === 'front') { col = mx; row = size - 1 - my; }
+        else if (view === 'side') { col = mz; row = size - 1 - my; }
+        else { col = mx; row = mz; }
+        if (col >= 0 && col < size && row >= 0 && row < size) {
+          sil[col + row * size] = 1;
+        }
+      }
+
+      ctx.strokeStyle = 'rgba(255, 200, 50, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+          if (!sil[col + row * size]) continue;
+          const x1 = col * cellSize;
+          const y1 = row * cellSize;
+          const x2 = x1 + cellSize;
+          const y2 = y1 + cellSize;
+          if (col === 0 || !sil[col - 1 + row * size]) { ctx.moveTo(x1, y1); ctx.lineTo(x1, y2); }
+          if (col === size - 1 || !sil[col + 1 + row * size]) { ctx.moveTo(x2, y1); ctx.lineTo(x2, y2); }
+          if (row === 0 || !sil[col + (row - 1) * size]) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); }
+          if (row === size - 1 || !sil[col + (row + 1) * size]) { ctx.moveTo(x1, y2); ctx.lineTo(x2, y2); }
+        }
+      }
+      ctx.stroke();
     }
 
     // Hover highlight
@@ -95,7 +157,7 @@ export default function Grid2D({
       }
       ctx.setLineDash([]);
     }
-  }, [gridData, size, canvasDim, cellSize, hoverCell, depth, depthLabel]);
+  }, [gridData, size, canvasDim, cellSize, hoverCell, depth, depthLabel, modelVoxels, view]);
 
   const getCellFromEvent = useCallback(
     (e) => {

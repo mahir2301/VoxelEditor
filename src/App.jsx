@@ -127,6 +127,8 @@ export default function App() {
             depth={Math.floor(state.resolution / 2)}
             onDepthChange={() => {}}
             onViewClick={() => handleSetCameraView('front')}
+            modelVoxels={effectiveModelVoxels}
+            view="front"
           />
           <Grid2D
             gridData={state.sideGrid}
@@ -138,6 +140,8 @@ export default function App() {
             depth={Math.floor(state.resolution / 2)}
             onDepthChange={() => {}}
             onViewClick={() => handleSetCameraView('left')}
+            modelVoxels={effectiveModelVoxels}
+            view="side"
           />
           <Grid2D
             gridData={state.topGrid}
@@ -149,6 +153,8 @@ export default function App() {
             depth={Math.floor(state.resolution / 2)}
             onDepthChange={() => {}}
             onViewClick={() => handleSetCameraView('top')}
+            modelVoxels={effectiveModelVoxels}
+            view="top"
           />
           <div className="app-piece-preview">
             <Viewport3D

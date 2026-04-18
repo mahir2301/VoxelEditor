@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { buildVoxelGeometry, getVoxelIndexFromHit } from '../utils/voxelUtils';
 import './Viewport3D.css';
 
-function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1.0, color = null }) {
+function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1.0, color = null, onPointerDown }) {
   const geometry = useMemo(() => {
     const useColors = color ? null : (colors || voxels);
     return buildVoxelGeometry(voxels, useColors, palette, resolution);
@@ -14,7 +14,7 @@ function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1.0, color =
   if (geometry.attributes.position.count === 0) return null;
 
   return (
-    <mesh geometry={geometry}>
+    <mesh geometry={geometry} onPointerDown={onPointerDown}>
       <meshStandardMaterial
         vertexColors={!color}
         color={color || '#ffffff'}
@@ -105,7 +105,7 @@ function CameraController({ cameraView, resolution, controlsRef }) {
   return null;
 }
 
-function SceneContent({ mode, modelVoxels, editingPieceVoxels, modelColors, pieceVoxels, palette, resolution }) {
+function SceneContent({ mode, modelVoxels, editingPieceVoxels, modelColors, pieceVoxels, palette, resolution, onVoxelClick }) {
   const boxGeo = useMemo(() => new THREE.BoxGeometry(resolution, resolution, resolution), [resolution]);
 
   return (
@@ -166,6 +166,7 @@ function SceneContent({ mode, modelVoxels, editingPieceVoxels, modelColors, piec
           colors={modelColors}
           palette={palette}
           resolution={resolution}
+          onPointerDown={onVoxelClick}
         />
       )}
 
@@ -213,13 +214,8 @@ export default function Viewport3D({
     }
   }, [cameraView, dist]);
 
-  const handlePointerDown = (e) => {
-    if (mode !== 'model' || !onVoxelClick) return;
+  const handleVoxelPointerDown = (e) => {
     e.stopPropagation();
-
-    const mesh = e.object;
-    if (!mesh || !mesh.geometry) return;
-
     const faceIndex = e.faceIndex;
     if (faceIndex < 0) return;
 
@@ -244,7 +240,6 @@ export default function Viewport3D({
             far: 3000,
             position: initialPos,
           }}
-          onPointerDown={handlePointerDown}
           gl={{ antialias: true }}
         >
           <PerspectiveCamera
@@ -269,6 +264,7 @@ export default function Viewport3D({
             pieceVoxels={pieceVoxels}
             palette={palette}
             resolution={resolution}
+            onVoxelClick={mode === 'model' && onVoxelClick ? handleVoxelPointerDown : null}
           />
 
           <OrbitControls
