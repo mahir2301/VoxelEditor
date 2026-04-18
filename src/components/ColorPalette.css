@@ -1,0 +1,28 @@
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px;
+  background: #16213e;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.color-swatch {
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+
+.color-swatch:hover {
+  border-color: #888;
+  transform: scale(1.05);
+}
+
+.color-swatch.selected {
+  border-color: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
