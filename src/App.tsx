@@ -263,6 +263,10 @@ export default function App() {
               palette={state.palette}
               selectedColor={state.selectedColor}
               onColorSelect={(colorIndex: number) => dispatch({ type: 'SET_COLOR', colorIndex })}
+              onColorChange={(colorIndex, color) => {
+                dispatch({ type: 'SET_PALETTE_COLOR', colorIndex, color });
+                setHasUnsavedManualChanges(true);
+              }}
             />
             <div className={styles.hint}>{getToolHint(state.tool)}</div>
           </div>

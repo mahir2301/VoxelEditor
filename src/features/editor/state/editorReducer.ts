@@ -164,6 +164,14 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
     case 'SET_COLOR':
       return { ...state, selectedColor: action.colorIndex };
 
+    case 'SET_PALETTE_COLOR': {
+      const current = state.palette[action.colorIndex];
+      if (current === action.color) return state;
+      const palette = [...state.palette];
+      palette[action.colorIndex] = action.color;
+      return updateState(state, { ...state, palette }, true);
+    }
+
     case 'SET_CAMERA_MODE':
       return { ...state, cameraMode: action.mode };
 

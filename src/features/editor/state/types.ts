@@ -60,6 +60,7 @@ export type EditorAction =
   | { type: 'PAINT_VOXEL'; index: number; colorIndex: number }
   | { type: 'SET_TOOL'; tool: EditorTool }
   | { type: 'SET_COLOR'; colorIndex: number }
+  | { type: 'SET_PALETTE_COLOR'; colorIndex: number; color: string }
   | { type: 'SET_CAMERA_MODE'; mode: CameraMode }
   | { type: 'SET_CAMERA_VIEW'; view: CameraView }
   | { type: 'UNDO' }
