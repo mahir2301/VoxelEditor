@@ -6,7 +6,7 @@ import ColorPalette from './components/ColorPalette';
 import Toolbar from './components/Toolbar';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import { useVoxelState } from './hooks/useVoxelState';
-import type { CameraMode, EditorTool, GridName } from './features/editor/state/types';
+import type { CameraMode, CameraView, EditorTool, GridName } from './features/editor/state/types';
 import styles from './App.module.css';
 
 function getToolHint(tool: EditorTool): string {
@@ -18,6 +18,10 @@ function getToolHint(tool: EditorTool): string {
 export default function App() {
   const { state, dispatch, canUndo, canRedo, getEffectiveModelVoxels, getEditingPieceVoxels } = useVoxelState();
   const [pendingPieceId, setPendingPieceId] = useState<string | null>(null);
+  const [pieceCameraView, setPieceCameraView] = useState<CameraView>(() => state.cameraView);
+  const [modelCameraView, setModelCameraView] = useState<CameraView>(
+    () => (state.cameraMode === 'isometric' ? 'isometric' : state.cameraView),
+  );
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const effectiveModelVoxels = getEffectiveModelVoxels();
@@ -71,11 +75,33 @@ export default function App() {
         canUndo={canUndo}
         canRedo={canRedo}
         hasPieceVoxels={hasPieceVoxels}
-        onSetResolution={(resolution) => dispatch({ type: 'SET_RESOLUTION', resolution })}
+        onSetResolution={(resolution) => {
+          dispatch({ type: 'SET_RESOLUTION', resolution });
+          setPieceCameraView('perspective');
+          setModelCameraView('perspective');
+        }}
         onSetTool={(tool: EditorTool) => dispatch({ type: 'SET_TOOL', tool })}
-        onSetCameraMode={(mode: CameraMode) => dispatch({ type: 'SET_CAMERA_MODE', mode })}
-        onImportProject={(project) => dispatch({ type: 'LOAD_PROJECT', state: project })}
-        onNewProject={() => dispatch({ type: 'NEW_PROJECT' })}
+        onSetCameraMode={(mode: CameraMode) => {
+          dispatch({ type: 'SET_CAMERA_MODE', mode });
+          if (mode === 'perspective') {
+            dispatch({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
+            setPieceCameraView('perspective');
+            setModelCameraView('perspective');
+          } else {
+            setModelCameraView('isometric');
+          }
+        }}
+        onImportProject={(project) => {
+          dispatch({ type: 'LOAD_PROJECT', state: project });
+          const importedView = project.cameraMode === 'isometric' ? 'isometric' : (project.cameraView || 'perspective');
+          setPieceCameraView(importedView === 'isometric' ? 'perspective' : importedView);
+          setModelCameraView(importedView);
+        }}
+        onNewProject={() => {
+          dispatch({ type: 'NEW_PROJECT' });
+          setPieceCameraView('perspective');
+          setModelCameraView('perspective');
+        }}
         onNewPiece={() => dispatch({ type: 'CANCEL_EDITING' })}
         onPushOrFinishPiece={() => dispatch({ type: finishPieceAction })}
         onCancelEditing={() => dispatch({ type: 'CANCEL_EDITING' })}
@@ -93,7 +119,11 @@ export default function App() {
             view="front"
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('front', index, value)}
-            onViewClick={() => dispatch({ type: 'SET_CAMERA_VIEW', view: 'front' })}
+            onViewClick={() => {
+              dispatch({ type: 'SET_CAMERA_VIEW', view: 'front' });
+              setPieceCameraView('front');
+              setModelCameraView('front');
+            }}
           />
           <Grid2D
             gridData={state.sideGrid}
@@ -103,7 +133,11 @@ export default function App() {
             view="side"
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('side', index, value)}
-            onViewClick={() => dispatch({ type: 'SET_CAMERA_VIEW', view: 'left' })}
+            onViewClick={() => {
+              dispatch({ type: 'SET_CAMERA_VIEW', view: 'left' });
+              setPieceCameraView('left');
+              setModelCameraView('left');
+            }}
           />
           <Grid2D
             gridData={state.topGrid}
@@ -113,7 +147,11 @@ export default function App() {
             view="top"
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('top', index, value)}
-            onViewClick={() => dispatch({ type: 'SET_CAMERA_VIEW', view: 'top' })}
+            onViewClick={() => {
+              dispatch({ type: 'SET_CAMERA_VIEW', view: 'top' });
+              setPieceCameraView('top');
+              setModelCameraView('top');
+            }}
           />
 
           <div className={styles.piecePreview}>
@@ -122,7 +160,8 @@ export default function App() {
               pieceVoxels={state.pieceVoxels}
               palette={state.palette}
               resolution={state.resolution}
-              cameraView={state.cameraView}
+              cameraView={pieceCameraView}
+              onCameraViewChange={setPieceCameraView}
             />
           </div>
         </div>
@@ -156,8 +195,9 @@ export default function App() {
               modelColors={state.modelColors}
               palette={state.palette}
               resolution={state.resolution}
-              cameraView={state.cameraMode === 'isometric' ? 'isometric' : state.cameraView}
+              cameraView={modelCameraView}
               onVoxelClick={handleVoxelClick}
+              onCameraViewChange={setModelCameraView}
             />
           </div>
         </div>

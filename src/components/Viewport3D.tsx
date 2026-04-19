@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { MutableRefObject } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
@@ -40,6 +40,99 @@ interface Props {
   resolution: number;
   cameraView: CameraView;
   onVoxelClick?: (index: number) => void;
+  onCameraViewChange?: (view: CameraView) => void;
+}
+
+const DEFAULT_PERSPECTIVE_DIRECTION: [number, number, number] = [1, 0.85, 1];
+
+function CameraOrientationSync({ orientationRef }: { orientationRef: MutableRefObject<THREE.Quaternion> }) {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    orientationRef.current.copy(camera.quaternion).invert();
+  });
+
+  return null;
+}
+
+function pickViewFromNormal(normal: THREE.Vector3): CameraView {
+  const ax = Math.abs(normal.x);
+  const ay = Math.abs(normal.y);
+  const az = Math.abs(normal.z);
+  if (ax >= ay && ax >= az) return normal.x >= 0 ? 'right' : 'left';
+  if (ay >= ax && ay >= az) return normal.y >= 0 ? 'top' : 'bottom';
+  return normal.z >= 0 ? 'front' : 'back';
+}
+
+function OrientationWidget({
+  orientationRef,
+  onSelectView,
+}: {
+  orientationRef: MutableRefObject<THREE.Quaternion>;
+  onSelectView?: (view: CameraView) => void;
+}) {
+  const rootRef = useRef<THREE.Group | null>(null);
+  const edgeGeometry = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(0.88, 0.88, 0.88)), []);
+
+  useFrame(() => {
+    if (!rootRef.current) return;
+    rootRef.current.quaternion.copy(orientationRef.current);
+  });
+
+  const onCubeClick = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    const normal = event.face?.normal;
+    if (!normal) return;
+    onSelectView?.(pickViewFromNormal(normal));
+  };
+
+  const makeArrow = (view: CameraView) => () => onSelectView?.(view);
+
+  return (
+    <group ref={rootRef}>
+      <mesh onPointerDown={onCubeClick}>
+        <boxGeometry args={[0.88, 0.88, 0.88]} />
+        <meshStandardMaterial color="#1a314a" transparent opacity={0.82} roughness={0.35} metalness={0.2} />
+      </mesh>
+      <lineSegments>
+        <primitive object={edgeGeometry} attach="geometry" />
+        <lineBasicMaterial color="#b8d0e8" />
+      </lineSegments>
+
+      <group rotation={[0, 0, -Math.PI / 2]}>
+        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('right')}>
+          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+          <meshStandardMaterial color="#ff5d5d" />
+        </mesh>
+        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('right')}>
+          <coneGeometry args={[0.16, 0.34, 14]} />
+          <meshStandardMaterial color="#ff5d5d" />
+        </mesh>
+      </group>
+
+      <group>
+        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('top')}>
+          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+          <meshStandardMaterial color="#5de38a" />
+        </mesh>
+        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('top')}>
+          <coneGeometry args={[0.16, 0.34, 14]} />
+          <meshStandardMaterial color="#5de38a" />
+        </mesh>
+      </group>
+
+      <group rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('front')}>
+          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+          <meshStandardMaterial color="#69a9ff" />
+        </mesh>
+        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('front')}>
+          <coneGeometry args={[0.16, 0.34, 14]} />
+          <meshStandardMaterial color="#69a9ff" />
+        </mesh>
+      </group>
+    </group>
+  );
 }
 
 function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1, solidColor, onPointerDown }: VoxelMeshProps) {
@@ -83,7 +176,11 @@ function CameraController({ cameraView, resolution, controlsRef }: {
       top: [0, distance, 0],
       bottom: [0, -distance, 0],
       isometric: [distance, distance, distance],
-      perspective: [distance * 1.2, distance * 0.8, distance * 1.2],
+      perspective: [
+        distance * DEFAULT_PERSPECTIVE_DIRECTION[0],
+        distance * DEFAULT_PERSPECTIVE_DIRECTION[1],
+        distance * DEFAULT_PERSPECTIVE_DIRECTION[2],
+      ],
     };
 
     const [x, y, z] = position[cameraView] || position.perspective;
@@ -166,11 +263,17 @@ export default function Viewport3D({
   resolution,
   cameraView,
   onVoxelClick,
+  onCameraViewChange,
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const orientationRef = useRef(new THREE.Quaternion());
   const distance = resolution * 2.5;
   const initialPosition = useMemo<[number, number, number]>(
-    () => [distance * 1.2, distance * 0.8, distance * 1.2],
+    () => [
+      distance * DEFAULT_PERSPECTIVE_DIRECTION[0],
+      distance * DEFAULT_PERSPECTIVE_DIRECTION[1],
+      distance * DEFAULT_PERSPECTIVE_DIRECTION[2],
+    ],
     [distance],
   );
 
@@ -193,6 +296,7 @@ export default function Viewport3D({
         <Canvas gl={{ antialias: true }}>
           <PerspectiveCamera makeDefault fov={45} near={0.5} far={3000} position={initialPosition} />
           <CameraController cameraView={cameraView} resolution={resolution} controlsRef={controlsRef} />
+          <CameraOrientationSync orientationRef={orientationRef} />
 
           <SceneContent
             mode={mode}
@@ -207,6 +311,14 @@ export default function Viewport3D({
 
           <OrbitControls ref={controlsRef} target={[0, 0, 0]} minDistance={2} maxDistance={distance * 5} />
         </Canvas>
+
+        <div className={styles.orientationOverlay}>
+          <Canvas camera={{ position: [0, 0, 5.2], fov: 30 }} gl={{ alpha: true, antialias: true }}>
+            <ambientLight intensity={0.85} />
+            <directionalLight position={[3, 4, 4]} intensity={0.7} />
+            <OrientationWidget orientationRef={orientationRef} onSelectView={onCameraViewChange} />
+          </Canvas>
+        </div>
       </div>
     </section>
   );
