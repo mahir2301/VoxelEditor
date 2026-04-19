@@ -168,13 +168,14 @@ function CameraController({ cameraView, resolution, controlsRef }: {
     if (!controlsRef.current) return;
     const camera = controlsRef.current.object;
     const distance = resolution * 2.5;
+    const epsilon = distance * 0.001;
     const position = {
       front: [0, 0, distance],
       back: [0, 0, -distance],
       right: [distance, 0, 0],
       left: [-distance, 0, 0],
-      top: [0, distance, 0],
-      bottom: [0, -distance, 0],
+      top: [0, distance, epsilon],
+      bottom: [0, -distance, epsilon],
       isometric: [distance, distance, distance],
       perspective: [
         distance * DEFAULT_PERSPECTIVE_DIRECTION[0],
@@ -185,7 +186,7 @@ function CameraController({ cameraView, resolution, controlsRef }: {
 
     const [x, y, z] = position[cameraView] || position.perspective;
     camera.position.set(x, y, z);
-    camera.up.set(0, cameraView === 'top' || cameraView === 'bottom' ? 0 : 1, cameraView === 'top' || cameraView === 'bottom' ? -1 : 0);
+    camera.up.set(0, 1, 0);
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
     controlsRef.current.target.set(0, 0, 0);

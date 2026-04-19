@@ -93,7 +93,7 @@ function drawCanvas(ctx: CanvasRenderingContext2D, {
       let row = z;
       if (view === 'front') row = size - 1 - y;
       if (view === 'side') {
-        col = z;
+        col = size - 1 - z;
         row = size - 1 - y;
       }
       silhouette[col + row * size] = 1;
