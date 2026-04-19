@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import type { SerializedProject } from '../features/editor/state/types';
 import { importProject } from '../utils/exportGLB';
@@ -27,22 +27,20 @@ export default function LandingScreen({
   onLoadProject,
   onLoadAutosave
 }: Props) {
-  const handlers = useMemo(
-    () => ({
-      onImport: async (files: FileList | null) => {
-        const file = files?.[0];
-        if (!file) {
-          return;
-        }
-        try {
-          const project = await importProject(file);
-          onLoadProject(project);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown error';
-          window.alert(`Import failed: ${message}`);
-        }
+  const handleImport = useCallback(
+    async (files: FileList | null) => {
+      const file = files?.[0];
+      if (!file) {
+        return;
       }
-    }),
+      try {
+        const project = await importProject(file);
+        onLoadProject(project);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        window.alert(`Import failed: ${message}`);
+      }
+    },
     [onLoadProject]
   );
 
@@ -72,7 +70,7 @@ export default function LandingScreen({
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Open Project</h2>
           <div className={styles.row}>
-            <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handlers.onImport}>
+            <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handleImport}>
               <Button>Load Project</Button>
             </FileTrigger>
             <Button isDisabled={!hasAutosave} onPress={onLoadAutosave}>

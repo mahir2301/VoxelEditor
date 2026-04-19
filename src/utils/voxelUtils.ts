@@ -98,6 +98,11 @@ export function buildVoxelGeometry(
   const colorAttr = [];
   const indices = [];
   let vertexCount = 0;
+  const paletteRgb = palette.map((entry) => {
+    const color = new THREE.Color(entry);
+    return [color.r, color.g, color.b] as const;
+  });
+  const fallbackRgb = paletteRgb[0] || ([1, 1, 1] as const);
 
   for (let i = 0; i < voxels.length; i += 1) {
     if (!voxels[i]) {
@@ -107,7 +112,7 @@ export function buildVoxelGeometry(
     const [x, y, z] = getVoxelCoord(i, resolution);
     const [ox, oy, oz] = getVoxelOffset(x, y, z, resolution);
     const colorIndex = colors ? colors[i] : 0;
-    const color = new THREE.Color(palette[colorIndex] || palette[0]);
+    const [r, g, b] = paletteRgb[colorIndex] || fallbackRgb;
 
     for (const face of FACE_DATA) {
       const nx = x + face.dir[0];
@@ -119,7 +124,7 @@ export function buildVoxelGeometry(
 
       for (const [vx, vy, vz] of face.verts) {
         positions.push(ox + vx, oy + vy, oz + vz);
-        colorAttr.push(color.r, color.g, color.b);
+        colorAttr.push(r, g, b);
       }
 
       indices.push(
