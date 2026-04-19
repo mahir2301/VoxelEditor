@@ -13,7 +13,7 @@ const SerializedProjectSchema = type({
   frontGrid: 'number[]',
   sideGrid: 'number[]',
   topGrid: 'number[]',
-  pieces: [SerializedPieceSchema],
+  pieces: SerializedPieceSchema.array(),
   modelVoxels: 'number[]',
   modelColors: 'number[]',
   palette: 'string[]',
