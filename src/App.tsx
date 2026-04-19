@@ -33,6 +33,7 @@ export default function App() {
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const effectiveModelVoxels = getEffectiveModelVoxels();
   const editingPieceVoxels = getEditingPieceVoxels();
+  const previewPieceOverlayVoxels = editingPieceVoxels || (hasPieceVoxels ? state.pieceVoxels : null);
 
   const markDirty = useCallback(() => setHasUnsavedManualChanges(true), []);
   const markClean = useCallback(() => setHasUnsavedManualChanges(false), []);
@@ -273,7 +274,7 @@ export default function App() {
             <Viewport3D
               mode="model"
               modelVoxels={state.modelVoxels}
-              editingPieceVoxels={editingPieceVoxels}
+              editingPieceVoxels={previewPieceOverlayVoxels}
               modelColors={state.modelColors}
               palette={state.palette}
               resolution={state.resolution}

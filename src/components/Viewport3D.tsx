@@ -159,6 +159,27 @@ function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1, solidColo
   );
 }
 
+function VoxelOutline({ voxels, resolution, color = '#9de6d6' }: {
+  voxels: Uint8Array;
+  resolution: number;
+  color?: string;
+}) {
+  const geometry = useMemo(
+    () => buildVoxelGeometry(voxels, null, ['#000000', '#ffffff'], resolution),
+    [voxels, resolution],
+  );
+
+  const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
+
+  if (!geometry.attributes.position?.count) return null;
+
+  return (
+    <lineSegments geometry={edges}>
+      <lineBasicMaterial color={color} transparent opacity={0.95} />
+    </lineSegments>
+  );
+}
+
 function CameraController({ cameraView, resolution, controlsRef }: {
   cameraView: CameraView;
   resolution: number;
@@ -232,13 +253,16 @@ function SceneContent({
       )}
 
       {mode === 'model' && editingPieceVoxels && (
-        <VoxelMesh
-          voxels={editingPieceVoxels}
-          palette={['#000', '#9de6d6']}
-          resolution={resolution}
-          solidColor="#7ad6c6"
-          opacity={0.35}
-        />
+        <>
+          <VoxelMesh
+            voxels={editingPieceVoxels}
+            palette={['#000', '#9de6d6']}
+            resolution={resolution}
+            solidColor="#7ad6c6"
+            opacity={0.35}
+          />
+          <VoxelOutline voxels={editingPieceVoxels} resolution={resolution} />
+        </>
       )}
 
       {mode === 'piece' && pieceVoxels && (
