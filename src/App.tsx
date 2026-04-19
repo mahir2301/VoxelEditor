@@ -8,7 +8,7 @@ import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import { useVoxelState } from './hooks/useVoxelState';
 import { loadStateFromStorage } from './features/editor/state/persistence';
-import type { CameraMode, CameraView, EditorTool, GridName, SerializedProject } from './features/editor/state/types';
+import type { CameraMode, CameraView, EditorAction, EditorTool, GridName, SerializedProject } from './features/editor/state/types';
 import styles from './App.module.css';
 
 function getToolHint(tool: EditorTool): string {
@@ -34,6 +34,14 @@ export default function App() {
   const effectiveModelVoxels = getEffectiveModelVoxels();
   const editingPieceVoxels = getEditingPieceVoxels();
 
+  const markDirty = useCallback(() => setHasUnsavedManualChanges(true), []);
+  const markClean = useCallback(() => setHasUnsavedManualChanges(false), []);
+
+  const runAction = useCallback((action: EditorAction, affectsModel = false) => {
+    dispatch(action);
+    if (affectsModel) markDirty();
+  }, [dispatch, markDirty]);
+
   const syncLocalCameraViews = useCallback((mode: CameraMode, view: CameraView) => {
     const effectiveView = mode === 'isometric' ? 'isometric' : view;
     setPieceCameraView(effectiveView === 'isometric' ? 'perspective' : effectiveView);
@@ -44,20 +52,20 @@ export default function App() {
     dispatch({ type: 'LOAD_PROJECT', state: project });
     setLandingResolution(project.resolution || 16);
     syncLocalCameraViews(project.cameraMode || 'perspective', project.cameraView || 'perspective');
-    setHasUnsavedManualChanges(false);
+    markClean();
     setScreen('editor');
-  }, [dispatch, syncLocalCameraViews]);
+  }, [dispatch, markClean, syncLocalCameraViews]);
 
   const handleCreateProject = useCallback(() => {
     if (state.resolution !== landingResolution) {
-      dispatch({ type: 'SET_RESOLUTION', resolution: landingResolution });
+      runAction({ type: 'SET_RESOLUTION', resolution: landingResolution });
     } else {
-      dispatch({ type: 'NEW_PROJECT' });
+      runAction({ type: 'NEW_PROJECT' });
     }
     syncLocalCameraViews('perspective', 'perspective');
-    setHasUnsavedManualChanges(false);
+    markClean();
     setScreen('editor');
-  }, [dispatch, landingResolution, state.resolution, syncLocalCameraViews]);
+  }, [landingResolution, markClean, runAction, state.resolution, syncLocalCameraViews]);
 
   const handleLoadAutosave = useCallback(() => {
     const autosave = loadStateFromStorage();
@@ -69,9 +77,8 @@ export default function App() {
   }, [openEditorWithProject]);
 
   const handleSetCell = useCallback((grid: GridName, index: number, value: number) => {
-    dispatch({ type: 'SET_CELL', grid, index, value });
-    setHasUnsavedManualChanges(true);
-  }, [dispatch]);
+    runAction({ type: 'SET_CELL', grid, index, value }, true);
+  }, [runAction]);
 
   const handleLoadPiece = useCallback((pieceId: string) => {
     const hasUnsavedDraft = state.frontGrid.some(Boolean) || state.sideGrid.some(Boolean) || state.topGrid.some(Boolean);
@@ -79,26 +86,24 @@ export default function App() {
       setPendingPieceId(pieceId);
       return;
     }
-    dispatch({ type: 'LOAD_PIECE_FOR_EDITING', pieceId });
-  }, [dispatch, state.frontGrid, state.sideGrid, state.topGrid]);
+    runAction({ type: 'LOAD_PIECE_FOR_EDITING', pieceId });
+  }, [runAction, state.frontGrid, state.sideGrid, state.topGrid]);
 
   const handleConfirmPieceSwitch = useCallback(() => {
     if (!pendingPieceId) return;
-    dispatch({ type: 'LOAD_PIECE_FOR_EDITING', pieceId: pendingPieceId });
+    runAction({ type: 'LOAD_PIECE_FOR_EDITING', pieceId: pendingPieceId });
     setPendingPieceId(null);
-  }, [dispatch, pendingPieceId]);
+  }, [pendingPieceId, runAction]);
 
   const handleVoxelClick = useCallback((index: number) => {
     if (state.tool === 'paint') {
-      dispatch({ type: 'PAINT_VOXEL', index, colorIndex: state.selectedColor });
-      setHasUnsavedManualChanges(true);
+      runAction({ type: 'PAINT_VOXEL', index, colorIndex: state.selectedColor }, true);
       return;
     }
     if (state.tool === 'erase') {
-      dispatch({ type: 'PAINT_VOXEL', index, colorIndex: 0 });
-      setHasUnsavedManualChanges(true);
+      runAction({ type: 'PAINT_VOXEL', index, colorIndex: 0 }, true);
     }
-  }, [dispatch, state.selectedColor, state.tool]);
+  }, [runAction, state.selectedColor, state.tool]);
 
   const finishPieceAction = state.editingPieceId ? 'FINISH_EDITING' : 'PUSH_PIECE';
 
@@ -148,31 +153,24 @@ export default function App() {
         canUndo={canUndo}
         canRedo={canRedo}
         hasPieceVoxels={hasPieceVoxels}
-        onSetTool={(tool: EditorTool) => dispatch({ type: 'SET_TOOL', tool })}
+        onSetTool={(tool: EditorTool) => runAction({ type: 'SET_TOOL', tool })}
         onSetCameraMode={(mode: CameraMode) => {
-          dispatch({ type: 'SET_CAMERA_MODE', mode });
+          runAction({ type: 'SET_CAMERA_MODE', mode });
           if (mode === 'perspective') {
-            dispatch({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
+            runAction({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
             setPieceCameraView('perspective');
             setModelCameraView('perspective');
           } else {
             setModelCameraView('isometric');
           }
         }}
-        onNewPiece={() => dispatch({ type: 'CANCEL_EDITING' })}
+        onNewPiece={() => runAction({ type: 'CANCEL_EDITING' })}
         onPushOrFinishPiece={() => {
-          dispatch({ type: finishPieceAction });
-          setHasUnsavedManualChanges(true);
+          runAction({ type: finishPieceAction }, true);
         }}
-        onCancelEditing={() => dispatch({ type: 'CANCEL_EDITING' })}
-        onUndo={() => {
-          dispatch({ type: 'UNDO' });
-          setHasUnsavedManualChanges(true);
-        }}
-        onRedo={() => {
-          dispatch({ type: 'REDO' });
-          setHasUnsavedManualChanges(true);
-        }}
+        onCancelEditing={() => runAction({ type: 'CANCEL_EDITING' })}
+        onUndo={() => runAction({ type: 'UNDO' }, true)}
+        onRedo={() => runAction({ type: 'REDO' }, true)}
         onBackToLanding={() => {
           if (hasUnsavedManualChanges) {
             setPendingBackToLanding(true);
@@ -180,7 +178,7 @@ export default function App() {
           }
           goToLanding();
         }}
-        onManualCheckpoint={() => setHasUnsavedManualChanges(false)}
+        onManualCheckpoint={markClean}
       />
 
       <div className={styles.content}>
@@ -194,7 +192,7 @@ export default function App() {
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('front', index, value)}
             onViewClick={() => {
-              dispatch({ type: 'SET_CAMERA_VIEW', view: 'front' });
+              runAction({ type: 'SET_CAMERA_VIEW', view: 'front' });
               setPieceCameraView('front');
               setModelCameraView('front');
             }}
@@ -208,7 +206,7 @@ export default function App() {
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('side', index, value)}
             onViewClick={() => {
-              dispatch({ type: 'SET_CAMERA_VIEW', view: 'left' });
+              runAction({ type: 'SET_CAMERA_VIEW', view: 'left' });
               setPieceCameraView('left');
               setModelCameraView('left');
             }}
@@ -222,7 +220,7 @@ export default function App() {
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('top', index, value)}
             onViewClick={() => {
-              dispatch({ type: 'SET_CAMERA_VIEW', view: 'top' });
+              runAction({ type: 'SET_CAMERA_VIEW', view: 'top' });
               setPieceCameraView('top');
               setModelCameraView('top');
             }}
@@ -248,12 +246,10 @@ export default function App() {
               editingPieceId={state.editingPieceId}
               onSelectPiece={handleLoadPiece}
               onRenamePiece={(pieceId, name) => {
-                dispatch({ type: 'RENAME_PIECE', pieceId, name });
-                setHasUnsavedManualChanges(true);
+                runAction({ type: 'RENAME_PIECE', pieceId, name }, true);
               }}
               onDeletePiece={(pieceId) => {
-                dispatch({ type: 'DELETE_PIECE', pieceId });
-                setHasUnsavedManualChanges(true);
+                runAction({ type: 'DELETE_PIECE', pieceId }, true);
               }}
             />
           </div>
@@ -262,10 +258,9 @@ export default function App() {
             <ColorPalette
               palette={state.palette}
               selectedColor={state.selectedColor}
-              onColorSelect={(colorIndex: number) => dispatch({ type: 'SET_COLOR', colorIndex })}
+              onColorSelect={(colorIndex: number) => runAction({ type: 'SET_COLOR', colorIndex })}
               onColorChange={(colorIndex, color) => {
-                dispatch({ type: 'SET_PALETTE_COLOR', colorIndex, color });
-                setHasUnsavedManualChanges(true);
+                runAction({ type: 'SET_PALETTE_COLOR', colorIndex, color }, true);
               }}
             />
             <div className={styles.hint}>{getToolHint(state.tool)}</div>
