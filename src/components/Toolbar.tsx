@@ -1,6 +1,7 @@
+import { formatForDisplay } from '@tanstack/react-hotkeys';
 import { useCallback } from 'react';
+import { HOTKEYS } from '../features/editor/hotkeys';
 import type { CameraMode, EditorState, EditorTool } from '../features/editor/state/types';
-import { exportModelAsGLB, exportProject, serializeState } from '../utils/exportGLB';
 import Button from './ui/Button';
 import styles from './Toolbar.module.css';
 
@@ -17,7 +18,8 @@ interface Props {
   onUndo: () => void;
   onRedo: () => void;
   onBackToLanding: () => void;
-  onManualCheckpoint: () => void;
+  onSaveProject: () => void;
+  onExportGlb: () => void;
 }
 
 export default function Toolbar({
@@ -33,7 +35,8 @@ export default function Toolbar({
   onUndo,
   onRedo,
   onBackToLanding,
-  onManualCheckpoint
+  onSaveProject,
+  onExportGlb
 }: Props) {
   const isEditing = Boolean(state.editingPieceId);
 
@@ -57,33 +60,30 @@ export default function Toolbar({
     onSetCameraMode('isometric');
   }, [onSetCameraMode]);
 
-  const handleSaveProject = useCallback(() => {
-    exportProject(serializeState(state));
-    onManualCheckpoint();
-  }, [onManualCheckpoint, state]);
+  const formattedHotkeys = useCallback((hotkey: string) => formatForDisplay(hotkey), []);
 
-  const handleExportGlb = useCallback(async () => {
-    try {
-      await exportModelAsGLB(state.modelVoxels, state.modelColors, state.palette, state.resolution);
-      onManualCheckpoint();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      window.alert(`Export failed: ${message}`);
-    }
-  }, [onManualCheckpoint, state.modelColors, state.modelVoxels, state.palette, state.resolution]);
+  const actionLabel = useCallback(
+    (label: string, hotkey: string) => (
+      <span className={styles.actionLabel}>
+        <span>{label}</span>
+        <kbd className={styles.hotkey}>{formattedHotkeys(hotkey)}</kbd>
+      </span>
+    ),
+    [formattedHotkeys]
+  );
 
   return (
     <div className={styles.toolbar}>
       <div className={styles.group}>
         <span className={styles.label}>Tools</span>
         <Button isActive={state.tool === 'draw'} onPress={handleSetDrawTool}>
-          Draw
+          {actionLabel('Draw', HOTKEYS.drawTool)}
         </Button>
         <Button isActive={state.tool === 'erase'} onPress={handleSetEraseTool}>
-          Erase
+          {actionLabel('Erase', HOTKEYS.eraseTool)}
         </Button>
         <Button isActive={state.tool === 'paint'} onPress={handleSetPaintTool}>
-          Paint
+          {actionLabel('Paint', HOTKEYS.paintTool)}
         </Button>
       </div>
 
@@ -92,10 +92,10 @@ export default function Toolbar({
       <div className={styles.group}>
         <span className={styles.label}>Camera</span>
         <Button isActive={state.cameraMode === 'perspective'} onPress={handleSetPerspectiveMode}>
-          Perspective
+          {actionLabel('Perspective', HOTKEYS.perspectiveCamera)}
         </Button>
         <Button isActive={state.cameraMode === 'isometric'} onPress={handleSetIsometricMode}>
-          Isometric
+          {actionLabel('Isometric', HOTKEYS.isometricCamera)}
         </Button>
       </div>
 
@@ -106,15 +106,17 @@ export default function Toolbar({
         {isEditing ? (
           <>
             <Button variant="accent" onPress={onPushOrFinishPiece}>
-              Done
+              {actionLabel('Done', HOTKEYS.pushOrDonePiece)}
             </Button>
-            <Button onPress={onCancelEditing}>Cancel</Button>
+            <Button onPress={onCancelEditing}>
+              {actionLabel('Cancel', HOTKEYS.cancelEditing)}
+            </Button>
           </>
         ) : (
           <>
-            <Button onPress={onNewPiece}>New Piece</Button>
+            <Button onPress={onNewPiece}>{actionLabel('New Piece', HOTKEYS.newPiece)}</Button>
             <Button variant="accent" isDisabled={!hasPieceVoxels} onPress={onPushOrFinishPiece}>
-              Push
+              {actionLabel('Push', HOTKEYS.pushOrDonePiece)}
             </Button>
           </>
         )}
@@ -125,10 +127,10 @@ export default function Toolbar({
       <div className={styles.group}>
         <span className={styles.label}>History</span>
         <Button isDisabled={!canUndo} onPress={onUndo}>
-          Undo
+          {actionLabel('Undo', HOTKEYS.undo)}
         </Button>
         <Button isDisabled={!canRedo} onPress={onRedo}>
-          Redo
+          {actionLabel('Redo', HOTKEYS.redo)}
         </Button>
       </div>
 
@@ -136,11 +138,11 @@ export default function Toolbar({
 
       <div className={styles.group}>
         <span className={styles.label}>Project</span>
-        <Button onPress={handleSaveProject}>Save</Button>
-        <Button variant="success" onPress={handleExportGlb}>
-          Export GLB
+        <Button onPress={onSaveProject}>{actionLabel('Save', HOTKEYS.saveProject)}</Button>
+        <Button variant="success" onPress={onExportGlb}>
+          {actionLabel('Export GLB', HOTKEYS.exportGlb)}
         </Button>
-        <Button onPress={onBackToLanding}>Back to Landing</Button>
+        <Button onPress={onBackToLanding}>{actionLabel('Back', HOTKEYS.backToLanding)}</Button>
       </div>
     </div>
   );

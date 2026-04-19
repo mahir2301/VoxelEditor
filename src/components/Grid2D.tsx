@@ -1,5 +1,7 @@
+import { formatForDisplay } from '@tanstack/react-hotkeys';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import { HOTKEYS } from '../features/editor/hotkeys';
 import type { EditorTool } from '../features/editor/state/types';
 import Button from './ui/Button';
 import styles from './Grid2D.module.css';
@@ -254,11 +256,23 @@ export default function Grid2D({
     setHoverCell(null);
   }, [handleStopDraw]);
 
+  const viewHotkey =
+    view === 'front'
+      ? formatForDisplay(HOTKEYS.viewFront)
+      : view === 'side'
+        ? formatForDisplay(HOTKEYS.viewSide)
+        : formatForDisplay(HOTKEYS.viewTop);
+
   return (
     <section className={styles.root}>
       <header className={styles.header}>
         <span className={styles.label}>{label}</span>
-        <Button onPress={onViewClick}>View</Button>
+        <Button onPress={onViewClick}>
+          <span className={styles.actionLabel}>
+            <span>View</span>
+            <kbd className={styles.hotkey}>{viewHotkey}</kbd>
+          </span>
+        </Button>
       </header>
 
       <div className={styles.canvasWrap} ref={wrapRef}>

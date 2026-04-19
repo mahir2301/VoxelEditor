@@ -38,3 +38,19 @@
   width: 0;
   height: 0;
 }
+
+.actionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.hotkey {
+  border: 1px solid rgba(154, 176, 200, 0.45);
+  border-radius: 0.25rem;
+  background: rgba(6, 13, 22, 0.7);
+  color: #bad0e4;
+  font-size: 0.64rem;
+  line-height: 1;
+  padding: 0.14rem 0.24rem;
+}
