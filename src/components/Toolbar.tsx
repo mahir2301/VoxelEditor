@@ -52,6 +52,18 @@ export default function Toolbar({
     onSetTool('paint');
   }, [onSetTool]);
 
+  const handleSetFillTool = useCallback(() => {
+    onSetTool('fill');
+  }, [onSetTool]);
+
+  const handleSetFillEraseTool = useCallback(() => {
+    onSetTool('fillErase');
+  }, [onSetTool]);
+
+  const handleSetPaintFillTool = useCallback(() => {
+    onSetTool('paintFill');
+  }, [onSetTool]);
+
   const handleSetPerspectiveMode = useCallback(() => {
     onSetCameraMode('perspective');
   }, [onSetCameraMode]);
@@ -76,15 +88,32 @@ export default function Toolbar({
     <div className={styles.toolbar}>
       <div className={styles.group}>
         <span className={styles.label}>Tools</span>
-        <Button isActive={state.tool === 'draw'} onPress={handleSetDrawTool}>
-          {actionLabel('Draw', HOTKEYS.drawTool)}
-        </Button>
-        <Button isActive={state.tool === 'erase'} onPress={handleSetEraseTool}>
-          {actionLabel('Erase', HOTKEYS.eraseTool)}
-        </Button>
-        <Button isActive={state.tool === 'paint'} onPress={handleSetPaintTool}>
-          {actionLabel('Paint', HOTKEYS.paintTool)}
-        </Button>
+        <div className={styles.toolRows}>
+          <div className={styles.toolRow}>
+            <span className={styles.subLabel}>Top</span>
+            <Button isActive={state.tool === 'draw'} onPress={handleSetDrawTool}>
+              {actionLabel('Draw', HOTKEYS.drawTool)}
+            </Button>
+            <Button isActive={state.tool === 'erase'} onPress={handleSetEraseTool}>
+              {actionLabel('Erase', HOTKEYS.eraseTool)}
+            </Button>
+            <Button isActive={state.tool === 'fill'} onPress={handleSetFillTool}>
+              {actionLabel('Fill', HOTKEYS.fillTool)}
+            </Button>
+            <Button isActive={state.tool === 'fillErase'} onPress={handleSetFillEraseTool}>
+              {actionLabel('Fill Erase', HOTKEYS.fillEraseTool)}
+            </Button>
+          </div>
+          <div className={styles.toolRow}>
+            <span className={styles.subLabel}>Bottom</span>
+            <Button isActive={state.tool === 'paint'} onPress={handleSetPaintTool}>
+              {actionLabel('Paint', HOTKEYS.paintTool)}
+            </Button>
+            <Button isActive={state.tool === 'paintFill'} onPress={handleSetPaintFillTool}>
+              {actionLabel('Fill', HOTKEYS.paintFillTool)}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className={styles.separator} />

@@ -27,6 +27,7 @@ interface Props {
   label: string;
   size: number;
   onSetCell: (index: number, value: number) => void;
+  onFillCell: (index: number, value: number) => void;
   tool: EditorTool;
   onViewClick: () => void;
   modelVoxels?: Uint8Array | null;
@@ -145,6 +146,7 @@ export default function Grid2D({
   label,
   size,
   onSetCell,
+  onFillCell,
   tool,
   onViewClick,
   modelVoxels,
@@ -153,7 +155,6 @@ export default function Grid2D({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
-  const drawValueRef = useRef(1);
   const [hoverCell, setHoverCell] = useState<HoverCell | null>(null);
   const [canvasDim, setCanvasDim] = useState(300);
 
@@ -208,14 +209,14 @@ export default function Grid2D({
 
   const applyTool = useCallback(
     (index: number) => {
-      if (tool === 'erase') {
+      if (tool === 'erase' || tool === 'fillErase') {
         onSetCell(index, 0);
         return;
       }
-      if (tool !== 'draw') {
+      if (tool !== 'draw' && tool !== 'fill') {
         return;
       }
-      onSetCell(index, drawValueRef.current);
+      onSetCell(index, 1);
     },
     [onSetCell, tool]
   );
@@ -226,13 +227,18 @@ export default function Grid2D({
       if (!cell) {
         return;
       }
-      drawingRef.current = true;
-      if (tool === 'draw') {
-        drawValueRef.current = gridData[cell.index] ? 0 : 1;
+      if (tool === 'fill') {
+        onFillCell(cell.index, 1);
+        return;
       }
+      if (tool === 'fillErase') {
+        onFillCell(cell.index, 0);
+        return;
+      }
+      drawingRef.current = true;
       applyTool(cell.index);
     },
-    [applyTool, getCell, gridData, tool]
+    [applyTool, getCell, onFillCell, tool]
   );
 
   const handlePointerMove = useCallback(
@@ -242,9 +248,12 @@ export default function Grid2D({
       if (!drawingRef.current || !cell) {
         return;
       }
+      if (tool === 'fill' || tool === 'fillErase') {
+        return;
+      }
       applyTool(cell.index);
     },
-    [applyTool, getCell]
+    [applyTool, getCell, tool]
   );
 
   const handleStopDraw = useCallback(() => {

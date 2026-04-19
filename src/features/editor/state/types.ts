@@ -1,4 +1,4 @@
-export type EditorTool = 'draw' | 'erase' | 'paint';
+export type EditorTool = 'draw' | 'erase' | 'fill' | 'fillErase' | 'paint' | 'paintFill';
 export type CameraMode = 'perspective' | 'isometric';
 export type CameraView =
   | 'front'
@@ -59,6 +59,7 @@ export interface EditorState {
 export type EditorAction =
   | { type: 'SET_RESOLUTION'; resolution: number }
   | { type: 'SET_CELL'; grid: GridName; index: number; value: number }
+  | { type: 'FILL_CELL'; grid: GridName; index: number; value: number }
   | { type: 'LOAD_PIECE_FOR_EDITING'; pieceId: string }
   | { type: 'PUSH_PIECE' }
   | { type: 'FINISH_EDITING' }
@@ -66,6 +67,7 @@ export type EditorAction =
   | { type: 'RENAME_PIECE'; pieceId: string; name: string }
   | { type: 'DELETE_PIECE'; pieceId: string }
   | { type: 'PAINT_VOXEL'; index: number; colorIndex: number }
+  | { type: 'FILL_PAINT_VOXEL'; index: number; colorIndex: number }
   | { type: 'SET_TOOL'; tool: EditorTool }
   | { type: 'SET_COLOR'; colorIndex: number }
   | { type: 'SET_PALETTE_COLOR'; colorIndex: number; color: string }

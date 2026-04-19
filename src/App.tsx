@@ -25,6 +25,15 @@ function getToolHint(tool: EditorTool): string {
   if (tool === 'paint') {
     return 'Click model voxels to paint.';
   }
+  if (tool === 'paintFill') {
+    return 'Click model voxels to fill connected colors.';
+  }
+  if (tool === 'fill') {
+    return 'Click a grid cell to flood fill draft voxels.';
+  }
+  if (tool === 'fillErase') {
+    return 'Click a grid cell to flood erase draft voxels.';
+  }
   if (tool === 'erase') {
     return 'Click and drag in grids to erase.';
   }
@@ -118,6 +127,13 @@ export default function App() {
     [runAction]
   );
 
+  const handleFillCell = useCallback(
+    (grid: GridName, index: number, value: number) => {
+      runAction({ grid, index, type: 'FILL_CELL', value }, true);
+    },
+    [runAction]
+  );
+
   const handleLoadPiece = useCallback(
     (pieceId: string) => {
       const hasUnsavedDraft =
@@ -147,8 +163,8 @@ export default function App() {
         runAction({ colorIndex: state.selectedColor, index, type: 'PAINT_VOXEL' }, true);
         return;
       }
-      if (state.tool === 'erase') {
-        runAction({ colorIndex: 0, index, type: 'PAINT_VOXEL' }, true);
+      if (state.tool === 'paintFill') {
+        runAction({ colorIndex: state.selectedColor, index, type: 'FILL_PAINT_VOXEL' }, true);
       }
     },
     [runAction, state.selectedColor, state.tool]
@@ -187,6 +203,18 @@ export default function App() {
 
   const handleSetPaintTool = useCallback(() => {
     handleSetTool('paint');
+  }, [handleSetTool]);
+
+  const handleSetFillTool = useCallback(() => {
+    handleSetTool('fill');
+  }, [handleSetTool]);
+
+  const handleSetFillEraseTool = useCallback(() => {
+    handleSetTool('fillErase');
+  }, [handleSetTool]);
+
+  const handleSetPaintFillTool = useCallback(() => {
+    handleSetTool('paintFill');
   }, [handleSetTool]);
 
   const handleSetCameraMode = useCallback(
@@ -269,6 +297,27 @@ export default function App() {
     [handleSetCell]
   );
 
+  const handleFrontCellFill = useCallback(
+    (index: number, value: number) => {
+      handleFillCell('front', index, value);
+    },
+    [handleFillCell]
+  );
+
+  const handleSideCellFill = useCallback(
+    (index: number, value: number) => {
+      handleFillCell('side', index, value);
+    },
+    [handleFillCell]
+  );
+
+  const handleTopCellFill = useCallback(
+    (index: number, value: number) => {
+      handleFillCell('top', index, value);
+    },
+    [handleFillCell]
+  );
+
   const handleFrontView = useCallback(() => {
     setEditorView('front');
   }, [setEditorView]);
@@ -313,7 +362,10 @@ export default function App() {
     () => [
       { callback: handleSetDrawTool, hotkey: HOTKEYS.drawTool },
       { callback: handleSetEraseTool, hotkey: HOTKEYS.eraseTool },
+      { callback: handleSetFillTool, hotkey: HOTKEYS.fillTool },
+      { callback: handleSetFillEraseTool, hotkey: HOTKEYS.fillEraseTool },
       { callback: handleSetPaintTool, hotkey: HOTKEYS.paintTool },
+      { callback: handleSetPaintFillTool, hotkey: HOTKEYS.paintFillTool },
       { callback: handleFrontView, hotkey: HOTKEYS.viewFront },
       { callback: handleRightView, hotkey: HOTKEYS.viewSide },
       { callback: handleTopView, hotkey: HOTKEYS.viewTop },
@@ -348,7 +400,10 @@ export default function App() {
       handleRightView,
       handleSetDrawTool,
       handleSetEraseTool,
+      handleSetFillEraseTool,
+      handleSetFillTool,
       handleSetIsometricMode,
+      handleSetPaintFillTool,
       handleSetPaintTool,
       handleSetPerspectiveMode,
       handleSaveProject,
@@ -424,6 +479,7 @@ export default function App() {
             view="front"
             modelVoxels={effectiveModelVoxels}
             onSetCell={handleFrontCellChange}
+            onFillCell={handleFrontCellFill}
             onViewClick={handleFrontView}
           />
           <Grid2D
@@ -434,6 +490,7 @@ export default function App() {
             view="side"
             modelVoxels={effectiveModelVoxels}
             onSetCell={handleSideCellChange}
+            onFillCell={handleSideCellFill}
             onViewClick={handleRightView}
           />
           <Grid2D
@@ -444,6 +501,7 @@ export default function App() {
             view="top"
             modelVoxels={effectiveModelVoxels}
             onSetCell={handleTopCellChange}
+            onFillCell={handleTopCellFill}
             onViewClick={handleTopView}
           />
 
