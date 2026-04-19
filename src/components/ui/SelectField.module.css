@@ -53,6 +53,20 @@
   cursor: pointer;
 }
 
+.optionContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.18rem;
+  border: 1px solid rgba(191, 206, 224, 0.6);
+  flex: 0 0 auto;
+}
+
 .option[data-hovered],
 .option[data-selected] {
   background: rgba(58, 98, 136, 0.35);

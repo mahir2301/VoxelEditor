@@ -13,6 +13,7 @@ import styles from './SelectField.module.css';
 interface SelectOption {
   value: number;
   label: string;
+  color?: string;
 }
 
 interface Props {
@@ -55,7 +56,14 @@ export default function SelectField({ label, options, value, onChange }: Props) 
               textValue={option.label}
               className={styles.option}
             >
-              {option.label}
+              <span className={styles.optionContent}>
+                {option.color ? (
+                  <svg className={styles.swatch} viewBox="0 0 10 10" aria-hidden>
+                    <rect x="0" y="0" width="10" height="10" fill={option.color} />
+                  </svg>
+                ) : null}
+                <span>{option.label}</span>
+              </span>
             </ListBoxItem>
           ))}
         </ListBox>
