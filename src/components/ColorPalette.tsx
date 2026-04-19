@@ -43,7 +43,12 @@ export default function ColorPalette({
   );
 
   const options = useMemo(
-    () => palette.map((color, index) => ({ label: `Slot ${index + 1} - ${color}`, value: index })),
+    () =>
+      palette.map((color, index) => ({
+        color,
+        label: `Slot ${index + 1}`,
+        value: index
+      })),
     [palette]
   );
 

@@ -108,7 +108,7 @@ export function applyPieceToModel(
   modelVoxels: Uint8Array,
   modelColors: Uint8Array,
   pieceVoxels: Uint8Array,
-  colorIndex = 1
+  colorIndex = 0
 ): { modelVoxels: Uint8Array; modelColors: Uint8Array } {
   const nextModelVoxels = new Uint8Array(modelVoxels);
   const nextModelColors = new Uint8Array(modelColors);
