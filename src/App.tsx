@@ -1,3 +1,4 @@
+import { useHotkeys } from '@tanstack/react-hotkeys';
 import { useCallback, useMemo, useState } from 'react';
 import ColorPalette from './components/ColorPalette';
 import Grid2D from './components/Grid2D';
@@ -6,6 +7,7 @@ import PieceList from './components/PieceList';
 import Toolbar from './components/Toolbar';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import Viewport3D from './components/Viewport3D';
+import { HOTKEYS } from './features/editor/hotkeys';
 import { loadStateFromStorage } from './features/editor/state/persistence';
 import type {
   CameraMode,
@@ -16,6 +18,7 @@ import type {
   SerializedProject
 } from './features/editor/state/types';
 import { useVoxelState } from './hooks/useVoxelState';
+import { exportModelAsGLB, exportProject, serializeState } from './utils/exportGLB';
 import styles from './App.module.css';
 
 function getToolHint(tool: EditorTool): string {
@@ -174,6 +177,18 @@ export default function App() {
     [runAction]
   );
 
+  const handleSetDrawTool = useCallback(() => {
+    handleSetTool('draw');
+  }, [handleSetTool]);
+
+  const handleSetEraseTool = useCallback(() => {
+    handleSetTool('erase');
+  }, [handleSetTool]);
+
+  const handleSetPaintTool = useCallback(() => {
+    handleSetTool('paint');
+  }, [handleSetTool]);
+
   const handleSetCameraMode = useCallback(
     (mode: CameraMode) => {
       runAction({ mode, type: 'SET_CAMERA_MODE' });
@@ -181,6 +196,14 @@ export default function App() {
     },
     [runAction, setEditorView]
   );
+
+  const handleSetPerspectiveMode = useCallback(() => {
+    handleSetCameraMode('perspective');
+  }, [handleSetCameraMode]);
+
+  const handleSetIsometricMode = useCallback(() => {
+    handleSetCameraMode('isometric');
+  }, [handleSetCameraMode]);
 
   const handleNewPiece = useCallback(() => {
     runAction({ type: 'CANCEL_EDITING' });
@@ -209,6 +232,21 @@ export default function App() {
     }
     goToLanding();
   }, [goToLanding, hasUnsavedManualChanges]);
+
+  const handleSaveProject = useCallback(() => {
+    exportProject(serializeState(state));
+    markClean();
+  }, [markClean, state]);
+
+  const handleExportGlb = useCallback(async () => {
+    try {
+      await exportModelAsGLB(state.modelVoxels, state.modelColors, state.palette, state.resolution);
+      markClean();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      window.alert(`Export failed: ${message}`);
+    }
+  }, [markClean, state.modelColors, state.modelVoxels, state.palette, state.resolution]);
 
   const handleFrontCellChange = useCallback(
     (index: number, value: number) => {
@@ -271,6 +309,59 @@ export default function App() {
     [runAction]
   );
 
+  const hotkeys = useMemo(
+    () => [
+      { callback: handleSetDrawTool, hotkey: HOTKEYS.drawTool },
+      { callback: handleSetEraseTool, hotkey: HOTKEYS.eraseTool },
+      { callback: handleSetPaintTool, hotkey: HOTKEYS.paintTool },
+      { callback: handleFrontView, hotkey: HOTKEYS.viewFront },
+      { callback: handleRightView, hotkey: HOTKEYS.viewSide },
+      { callback: handleTopView, hotkey: HOTKEYS.viewTop },
+      { callback: handleSetPerspectiveMode, hotkey: HOTKEYS.perspectiveCamera },
+      { callback: handleSetIsometricMode, hotkey: HOTKEYS.isometricCamera },
+      { callback: handleNewPiece, hotkey: HOTKEYS.newPiece },
+      {
+        callback: handlePushOrFinishPiece,
+        hotkey: HOTKEYS.pushOrDonePiece,
+        options: { enabled: hasPieceVoxels || Boolean(state.editingPieceId) }
+      },
+      {
+        callback: handleCancelEditing,
+        hotkey: HOTKEYS.cancelEditing,
+        options: { enabled: Boolean(state.editingPieceId) }
+      },
+      { callback: handleUndo, hotkey: HOTKEYS.undo, options: { enabled: canUndo } },
+      { callback: handleRedo, hotkey: HOTKEYS.redo, options: { enabled: canRedo } },
+      { callback: handleSaveProject, hotkey: HOTKEYS.saveProject },
+      { callback: handleExportGlb, hotkey: HOTKEYS.exportGlb },
+      { callback: handleBackToLanding, hotkey: HOTKEYS.backToLanding }
+    ],
+    [
+      canRedo,
+      canUndo,
+      handleBackToLanding,
+      handleCancelEditing,
+      handleFrontView,
+      handleNewPiece,
+      handlePushOrFinishPiece,
+      handleRedo,
+      handleRightView,
+      handleSetDrawTool,
+      handleSetEraseTool,
+      handleSetIsometricMode,
+      handleSetPaintTool,
+      handleSetPerspectiveMode,
+      handleSaveProject,
+      handleExportGlb,
+      handleTopView,
+      handleUndo,
+      hasPieceVoxels,
+      state.editingPieceId
+    ]
+  );
+
+  useHotkeys(hotkeys, { enabled: screen === 'editor' });
+
   if (screen === 'landing') {
     return (
       <LandingScreen
@@ -319,7 +410,8 @@ export default function App() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onBackToLanding={handleBackToLanding}
-        onManualCheckpoint={markClean}
+        onSaveProject={handleSaveProject}
+        onExportGlb={handleExportGlb}
       />
 
       <div className={styles.content}>

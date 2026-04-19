@@ -23,6 +23,22 @@
   color: #c0d1e2;
 }
 
+.actionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hotkey {
+  border: 1px solid rgba(154, 176, 200, 0.45);
+  border-radius: 0.24rem;
+  background: rgba(6, 13, 22, 0.68);
+  color: #b8cee2;
+  font-size: 0.62rem;
+  line-height: 1;
+  padding: 0.12rem 0.22rem;
+}
+
 .canvasWrap {
   flex: 1;
   min-height: 0;
