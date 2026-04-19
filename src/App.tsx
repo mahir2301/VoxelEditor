@@ -44,7 +44,7 @@ export default function App() {
 
   const syncLocalCameraViews = useCallback((mode: CameraMode, view: CameraView) => {
     const effectiveView = mode === 'isometric' ? 'isometric' : view;
-    setPieceCameraView(effectiveView === 'isometric' ? 'perspective' : effectiveView);
+    setPieceCameraView(effectiveView);
     setModelCameraView(effectiveView);
   }, []);
 
@@ -161,6 +161,8 @@ export default function App() {
             setPieceCameraView('perspective');
             setModelCameraView('perspective');
           } else {
+            runAction({ type: 'SET_CAMERA_VIEW', view: 'isometric' });
+            setPieceCameraView('isometric');
             setModelCameraView('isometric');
           }
         }}
@@ -232,6 +234,7 @@ export default function App() {
               pieceVoxels={state.pieceVoxels}
               palette={state.palette}
               resolution={state.resolution}
+              cameraMode={state.cameraMode}
               cameraView={pieceCameraView}
               onCameraViewChange={setPieceCameraView}
             />
@@ -274,6 +277,7 @@ export default function App() {
               modelColors={state.modelColors}
               palette={state.palette}
               resolution={state.resolution}
+              cameraMode={state.cameraMode}
               cameraView={modelCameraView}
               onVoxelClick={handleVoxelClick}
               onCameraViewChange={setModelCameraView}

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { MutableRefObject } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { buildVoxelGeometry, getVoxelIndexFromHit } from '../utils/voxelUtils';
-import type { CameraView } from '../features/editor/state/types';
+import type { CameraMode, CameraView } from '../features/editor/state/types';
 import styles from './Viewport3D.module.css';
 
 interface VoxelMeshProps {
@@ -38,6 +38,7 @@ interface Props {
   pieceVoxels?: Uint8Array;
   palette: string[];
   resolution: number;
+  cameraMode: CameraMode;
   cameraView: CameraView;
   onVoxelClick?: (index: number) => void;
   onCameraViewChange?: (view: CameraView) => void;
@@ -163,10 +164,9 @@ function CameraController({ cameraView, resolution, controlsRef }: {
   resolution: number;
   controlsRef: MutableRefObject<OrbitControlsImpl | null>;
 }) {
-  const { camera } = useThree();
-
   useEffect(() => {
     if (!controlsRef.current) return;
+    const camera = controlsRef.current.object;
     const distance = resolution * 2.5;
     const position = {
       front: [0, 0, distance],
@@ -190,7 +190,7 @@ function CameraController({ cameraView, resolution, controlsRef }: {
     camera.updateProjectionMatrix();
     controlsRef.current.target.set(0, 0, 0);
     controlsRef.current.update();
-  }, [camera, cameraView, controlsRef, resolution]);
+  }, [cameraView, controlsRef, resolution]);
 
   return null;
 }
@@ -261,6 +261,7 @@ export default function Viewport3D({
   pieceVoxels,
   palette,
   resolution,
+  cameraMode,
   cameraView,
   onVoxelClick,
   onCameraViewChange,
@@ -294,7 +295,17 @@ export default function Viewport3D({
       </header>
       <div className={styles.canvasWrap}>
         <Canvas gl={{ antialias: true }}>
-          <PerspectiveCamera makeDefault fov={45} near={0.5} far={3000} position={initialPosition} />
+          {cameraMode === 'isometric' ? (
+            <OrthographicCamera
+              makeDefault
+              near={0.5}
+              far={3000}
+              position={initialPosition}
+              zoom={Math.max(1.2, 72 / resolution)}
+            />
+          ) : (
+            <PerspectiveCamera makeDefault fov={45} near={0.5} far={3000} position={initialPosition} />
+          )}
           <CameraController cameraView={cameraView} resolution={resolution} controlsRef={controlsRef} />
           <CameraOrientationSync orientationRef={orientationRef} />
 
@@ -313,7 +324,12 @@ export default function Viewport3D({
         </Canvas>
 
         <div className={styles.orientationOverlay}>
-          <Canvas camera={{ position: [0, 0, 5.2], fov: 30 }} gl={{ alpha: true, antialias: true }}>
+          <Canvas gl={{ alpha: true, antialias: true }}>
+            {cameraMode === 'isometric' ? (
+              <OrthographicCamera makeDefault near={0.1} far={100} position={[0, 0, 5.2]} zoom={26} />
+            ) : (
+              <PerspectiveCamera makeDefault near={0.1} far={100} position={[0, 0, 5.2]} fov={30} />
+            )}
             <ambientLight intensity={0.85} />
             <directionalLight position={[3, 4, 4]} intensity={0.7} />
             <OrientationWidget orientationRef={orientationRef} onSelectView={onCameraViewChange} />
