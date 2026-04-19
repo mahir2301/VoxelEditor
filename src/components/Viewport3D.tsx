@@ -40,6 +40,7 @@ interface Props {
   resolution: number;
   cameraMode: CameraMode;
   cameraView: CameraView;
+  viewResetToken?: number;
   onVoxelClick?: (index: number) => void;
   onCameraViewChange?: (view: CameraView) => void;
 }
@@ -247,10 +248,12 @@ function VoxelOutline({
 function CameraController({
   cameraView,
   resolution,
+  viewResetToken,
   controlsRef
 }: {
   cameraView: CameraView;
   resolution: number;
+  viewResetToken?: number;
   controlsRef: MutableRefObject<OrbitControlsImpl | null>;
 }) {
   useEffect(() => {
@@ -282,7 +285,7 @@ function CameraController({
     camera.updateProjectionMatrix();
     controlsRef.current.target.set(0, 0, 0);
     controlsRef.current.update();
-  }, [cameraView, controlsRef, resolution]);
+  }, [cameraView, controlsRef, resolution, viewResetToken]);
 
   return null;
 }
@@ -370,6 +373,7 @@ export default function Viewport3D({
   resolution,
   cameraMode,
   cameraView,
+  viewResetToken,
   onVoxelClick,
   onCameraViewChange
 }: Props) {
@@ -428,6 +432,7 @@ export default function Viewport3D({
           <CameraController
             cameraView={cameraView}
             resolution={resolution}
+            viewResetToken={viewResetToken}
             controlsRef={controlsRef}
           />
           <CameraOrientationSync orientationRef={orientationRef} />
