@@ -1,7 +1,69 @@
-import * as THREE from 'three';
+import { BufferAttribute, BufferGeometry, Color, Mesh, MeshStandardMaterial, Scene } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { parseSerializedProjectOrThrow } from '../features/editor/state/projectSchema';
-import type { EditorState, SerializedProject } from '../features/editor/state/types';
+import type { SerializedProject } from '../features/editor/state/types';
+
+type VoxelTuple = readonly [number, number, number];
+
+const EXPORT_FACE_DATA: ReadonlyArray<{
+  dir: VoxelTuple;
+  verts: readonly [VoxelTuple, VoxelTuple, VoxelTuple, VoxelTuple];
+}> = [
+  {
+    dir: [0, 1, 0],
+    verts: [
+      [0, 1, 0],
+      [1, 1, 0],
+      [1, 1, 1],
+      [0, 1, 1]
+    ]
+  },
+  {
+    dir: [0, -1, 0],
+    verts: [
+      [0, 0, 0],
+      [0, 0, 1],
+      [1, 0, 1],
+      [1, 0, 0]
+    ]
+  },
+  {
+    dir: [1, 0, 0],
+    verts: [
+      [1, 0, 1],
+      [1, 1, 1],
+      [1, 1, 0],
+      [1, 0, 0]
+    ]
+  },
+  {
+    dir: [-1, 0, 0],
+    verts: [
+      [0, 1, 0],
+      [0, 1, 1],
+      [0, 0, 1],
+      [0, 0, 0]
+    ]
+  },
+  {
+    dir: [0, 0, 1],
+    verts: [
+      [0, 0, 1],
+      [0, 1, 1],
+      [1, 1, 1],
+      [1, 0, 1]
+    ]
+  },
+  {
+    dir: [0, 0, -1],
+    verts: [
+      [0, 0, 0],
+      [1, 0, 0],
+      [1, 1, 0],
+      [0, 1, 0]
+    ]
+  }
+] as const;
 
 /**
  * Build voxel geometry with flipped winding for Unity (left-handed coords).
@@ -11,82 +73,48 @@ function buildVoxelGeometryForExport(
   colors: Uint8Array,
   palette: string[],
   resolution: number
-): THREE.BufferGeometry {
+): BufferGeometry {
   const size = resolution;
-  const positions = [];
-  const colorAttr = [];
-  const indices = [];
+  const planeSize = size * size;
+
+  let visibleFaces = 0;
+  for (let i = 0; i < voxels.length; i += 1) {
+    if (!voxels[i]) {
+      continue;
+    }
+    const x = i % size;
+    const y = Math.floor(i / size) % size;
+    const z = Math.floor(i / planeSize);
+
+    for (let faceIndex = 0; faceIndex < EXPORT_FACE_DATA.length; faceIndex += 1) {
+      const face = EXPORT_FACE_DATA[faceIndex];
+      const nx = x + face.dir[0];
+      const ny = y + face.dir[1];
+      const nz = z + face.dir[2];
+      if (nx >= 0 && nx < size && ny >= 0 && ny < size && nz >= 0 && nz < size) {
+        if (voxels[nx + ny * size + nz * planeSize]) {
+          continue;
+        }
+      }
+      visibleFaces += 1;
+    }
+  }
+
+  const vertexCount = visibleFaces * 4;
+  const positions = new Float32Array(vertexCount * 3);
+  const colorAttr = new Float32Array(vertexCount * 3);
+  const indices = new Uint32Array(visibleFaces * 6);
+
+  let positionCursor = 0;
+  let colorCursor = 0;
+  let indexCursor = 0;
+  let baseVertex = 0;
+
   const paletteRgb = palette.map((entry) => {
-    const color = new THREE.Color(entry);
+    const color = new Color(entry);
     return [color.r, color.g, color.b] as const;
   });
   const fallbackRgb = paletteRgb[0] || ([1, 1, 1] as const);
-
-  // Same face definitions as scene but with FLIPPED winding (reversed vertex order)
-  const faceData = [
-    // Top (Y+): flipped from (0,1,0),(0,1,1),(1,1,1),(1,1,0)
-    {
-      dir: [0, 1, 0],
-      verts: [
-        [0, 1, 0],
-        [1, 1, 0],
-        [1, 1, 1],
-        [0, 1, 1]
-      ]
-    },
-    // Bottom (Y-): flipped from (0,0,0),(1,0,0),(1,0,1),(0,0,1)
-    {
-      dir: [0, -1, 0],
-      verts: [
-        [0, 0, 0],
-        [0, 0, 1],
-        [1, 0, 1],
-        [1, 0, 0]
-      ]
-    },
-    // Right (X+): flipped from (1,0,1),(1,0,0),(1,1,0),(1,1,1)
-    {
-      dir: [1, 0, 0],
-      verts: [
-        [1, 0, 1],
-        [1, 1, 1],
-        [1, 1, 0],
-        [1, 0, 0]
-      ]
-    },
-    // Left (X-): flipped from (0,1,0),(0,0,0),(0,0,1),(0,1,1)
-    {
-      dir: [-1, 0, 0],
-      verts: [
-        [0, 1, 0],
-        [0, 1, 1],
-        [0, 0, 1],
-        [0, 0, 0]
-      ]
-    },
-    // Front (Z+): flipped from (0,0,1),(1,0,1),(1,1,1),(0,1,1)
-    {
-      dir: [0, 0, 1],
-      verts: [
-        [0, 0, 1],
-        [0, 1, 1],
-        [1, 1, 1],
-        [1, 0, 1]
-      ]
-    },
-    // Back (Z-): flipped from (0,0,0),(0,1,0),(1,1,0),(1,0,0)
-    {
-      dir: [0, 0, -1],
-      verts: [
-        [0, 0, 0],
-        [1, 0, 0],
-        [1, 1, 0],
-        [0, 1, 0]
-      ]
-    }
-  ];
-
-  let vertexCount = 0;
 
   for (let i = 0; i < voxels.length; i += 1) {
     if (!voxels[i]) {
@@ -95,7 +123,7 @@ function buildVoxelGeometryForExport(
 
     const x = i % size;
     const y = Math.floor(i / size) % size;
-    const z = Math.floor(i / (size * size));
+    const z = Math.floor(i / planeSize);
 
     const colorIdx = colors ? colors[i] : 0;
     const [r, g, b] = paletteRgb[colorIdx] || fallbackRgb;
@@ -104,38 +132,46 @@ function buildVoxelGeometryForExport(
     const oy = y - size / 2;
     const oz = z - size / 2;
 
-    for (const face of faceData) {
+    for (let faceIndex = 0; faceIndex < EXPORT_FACE_DATA.length; faceIndex += 1) {
+      const face = EXPORT_FACE_DATA[faceIndex];
       const nx = x + face.dir[0];
       const ny = y + face.dir[1];
       const nz = z + face.dir[2];
 
       if (nx >= 0 && nx < size && ny >= 0 && ny < size && nz >= 0 && nz < size) {
-        if (voxels[nx + ny * size + nz * size * size]) {
+        if (voxels[nx + ny * size + nz * planeSize]) {
           continue;
         }
       }
 
-      for (const v of face.verts) {
-        positions.push(ox + v[0], oy + v[1], oz + v[2]);
-        colorAttr.push(r, g, b);
+      for (let vertexIndex = 0; vertexIndex < face.verts.length; vertexIndex += 1) {
+        const v = face.verts[vertexIndex];
+        positions[positionCursor] = ox + v[0];
+        positions[positionCursor + 1] = oy + v[1];
+        positions[positionCursor + 2] = oz + v[2];
+        positionCursor += 3;
+
+        colorAttr[colorCursor] = r;
+        colorAttr[colorCursor + 1] = g;
+        colorAttr[colorCursor + 2] = b;
+        colorCursor += 3;
       }
 
-      indices.push(
-        vertexCount,
-        vertexCount + 2,
-        vertexCount + 1,
-        vertexCount,
-        vertexCount + 3,
-        vertexCount + 2
-      );
-      vertexCount += 4;
+      indices[indexCursor] = baseVertex;
+      indices[indexCursor + 1] = baseVertex + 2;
+      indices[indexCursor + 2] = baseVertex + 1;
+      indices[indexCursor + 3] = baseVertex;
+      indices[indexCursor + 4] = baseVertex + 3;
+      indices[indexCursor + 5] = baseVertex + 2;
+      indexCursor += 6;
+      baseVertex += 4;
     }
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colorAttr, 3));
-  geometry.setIndex(indices);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new BufferAttribute(colorAttr, 3));
+  geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeVertexNormals();
 
   return geometry;
@@ -158,17 +194,22 @@ export async function exportModelAsGLB(
       return;
     }
 
-    const material = new THREE.MeshStandardMaterial({
+    const material = new MeshStandardMaterial({
       metalness: 0.1,
       roughness: 0.7,
       vertexColors: true
     });
 
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
     mesh.name = 'VoxelModel';
 
-    const scene = new THREE.Scene();
+    const scene = new Scene();
     scene.add(mesh);
+
+    const cleanup = () => {
+      geometry.dispose();
+      material.dispose();
+    };
 
     const exporter = new GLTFExporter();
     exporter.parse(
@@ -185,9 +226,11 @@ export async function exportModelAsGLB(
         link.download = 'voxel_model.glb';
         link.click();
         URL.revokeObjectURL(url);
+        cleanup();
         resolve();
       },
       (error) => {
+        cleanup();
         reject(error);
       },
       { binary: true }
@@ -232,27 +275,4 @@ export async function importProject(file: File): Promise<SerializedProject> {
     reader.onerror = () => reject(reader.error);
     reader.readAsText(file);
   });
-}
-
-/**
- * Serialize state for save.
- */
-export function serializeState(state: EditorState): SerializedProject {
-  return {
-    cameraMode: state.cameraMode,
-    cameraView: state.cameraView,
-    frontGrid: [...state.frontGrid],
-    modelColors: [...state.modelColors],
-    modelVoxels: [...state.modelVoxels],
-    palette: [...state.palette],
-    pieces: state.pieces.map((p) => ({
-      id: p.id,
-      name: p.name,
-      voxels: [...p.voxels]
-    })),
-    resolution: state.resolution,
-    sideGrid: [...state.sideGrid],
-    topGrid: [...state.topGrid],
-    version: 1
-  };
 }

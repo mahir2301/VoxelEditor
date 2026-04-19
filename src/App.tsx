@@ -1,14 +1,10 @@
 import { useHotkeys } from '@tanstack/react-hotkeys';
-import { useCallback, useMemo, useState } from 'react';
-import ColorPalette from './components/ColorPalette';
-import Grid2D from './components/Grid2D';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import LandingScreen from './components/LandingScreen';
-import PieceList from './components/PieceList';
-import Toolbar from './components/Toolbar';
 import ConfirmDialog from './components/ui/ConfirmDialog';
-import Viewport3D from './components/Viewport3D';
 import { HOTKEYS } from './features/editor/hotkeys';
 import { loadStateFromStorage } from './features/editor/state/persistence';
+import { serializeState } from './features/editor/state/serialization';
 import type {
   CameraMode,
   CameraView,
@@ -18,8 +14,14 @@ import type {
   SerializedProject
 } from './features/editor/state/types';
 import { useVoxelState } from './hooks/useVoxelState';
-import { exportModelAsGLB, exportProject, serializeState } from './utils/exportGLB';
 import styles from './App.module.css';
+
+const Toolbar = lazy(() => import('./components/Toolbar'));
+const Grid2D = lazy(() => import('./components/Grid2D'));
+const PieceList = lazy(() => import('./components/PieceList'));
+const ColorPalette = lazy(() => import('./components/ColorPalette'));
+const Viewport3D = lazy(() => import('./components/Viewport3D'));
+const EDITOR_LOADING_FALLBACK = <div className={styles.loading}>Loading editor...</div>;
 
 export default function App() {
   const { state, dispatch, canUndo, canRedo, effectiveModelVoxels, editingPieceVoxels } =
@@ -35,6 +37,7 @@ export default function App() {
     state.cameraMode === 'isometric' ? 'isometric' : state.cameraView
   );
   const [cameraViewResetToken, setCameraViewResetToken] = useState(0);
+  const [operationError, setOperationError] = useState<string | null>(null);
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const previewPieceOverlayVoxels =
@@ -42,6 +45,9 @@ export default function App() {
 
   const markDirty = useCallback(() => setHasUnsavedManualChanges(true), []);
   const markClean = useCallback(() => setHasUnsavedManualChanges(false), []);
+  const closeOperationError = useCallback(() => {
+    setOperationError(null);
+  }, []);
 
   const runAction = useCallback(
     (action: EditorAction, affectsModel = false) => {
@@ -245,17 +251,25 @@ export default function App() {
   }, [goToLanding, hasUnsavedManualChanges]);
 
   const handleSaveProject = useCallback(() => {
-    exportProject(serializeState(state));
-    markClean();
+    void import('./utils/exportGLB')
+      .then(({ exportProject }) => {
+        exportProject(serializeState(state));
+        markClean();
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        setOperationError(`Save failed: ${message}`);
+      });
   }, [markClean, state]);
 
   const handleExportGlb = useCallback(async () => {
     try {
+      const { exportModelAsGLB } = await import('./utils/exportGLB');
       await exportModelAsGLB(state.modelVoxels, state.modelColors, state.palette, state.resolution);
       markClean();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      window.alert(`Export failed: ${message}`);
+      setOperationError(`Export failed: ${message}`);
     }
   }, [markClean, state.modelColors, state.modelVoxels, state.palette, state.resolution]);
 
@@ -435,111 +449,121 @@ export default function App() {
         onConfirm={goToLanding}
       />
 
-      <Toolbar
-        state={state}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        hasPieceVoxels={hasPieceVoxels}
-        onSetTool={handleSetTool}
-        onSetCameraMode={handleSetCameraMode}
-        onNewPiece={handleNewPiece}
-        onPushOrFinishPiece={handlePushOrFinishPiece}
-        onCancelEditing={handleCancelEditing}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onBackToLanding={handleBackToLanding}
-        onSaveProject={handleSaveProject}
-        onExportGlb={handleExportGlb}
+      <ConfirmDialog
+        isOpen={Boolean(operationError)}
+        title="Operation failed"
+        description={operationError || ''}
+        cancelLabel="Close"
+        onCancel={closeOperationError}
       />
 
-      <div className={styles.content}>
-        <div className={styles.grids}>
-          <Grid2D
-            gridData={state.frontGrid}
-            label="Front (XY)"
-            size={state.resolution}
-            tool={state.tool}
-            view="front"
-            modelVoxels={effectiveModelVoxels}
-            onSetCell={handleFrontCellChange}
-            onFillCell={handleFrontCellFill}
-            onViewClick={handleFrontView}
-          />
-          <Grid2D
-            gridData={state.sideGrid}
-            label="Side (ZY)"
-            size={state.resolution}
-            tool={state.tool}
-            view="side"
-            modelVoxels={effectiveModelVoxels}
-            onSetCell={handleSideCellChange}
-            onFillCell={handleSideCellFill}
-            onViewClick={handleRightView}
-          />
-          <Grid2D
-            gridData={state.topGrid}
-            label="Top (XZ)"
-            size={state.resolution}
-            tool={state.tool}
-            view="top"
-            modelVoxels={effectiveModelVoxels}
-            onSetCell={handleTopCellChange}
-            onFillCell={handleTopCellFill}
-            onViewClick={handleTopView}
-          />
+      <Suspense fallback={EDITOR_LOADING_FALLBACK}>
+        <Toolbar
+          state={state}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasPieceVoxels={hasPieceVoxels}
+          onSetTool={handleSetTool}
+          onSetCameraMode={handleSetCameraMode}
+          onNewPiece={handleNewPiece}
+          onPushOrFinishPiece={handlePushOrFinishPiece}
+          onCancelEditing={handleCancelEditing}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onBackToLanding={handleBackToLanding}
+          onSaveProject={handleSaveProject}
+          onExportGlb={handleExportGlb}
+        />
 
-          <div className={styles.piecePreview}>
-            <Viewport3D
-              mode="piece"
-              pieceVoxels={state.pieceVoxels}
-              palette={state.palette}
-              resolution={state.resolution}
-              cameraMode={state.cameraMode}
-              cameraView={pieceCameraView}
-              viewResetToken={cameraViewResetToken}
-              onCameraViewChange={setPieceCameraView}
+        <div className={styles.content}>
+          <div className={styles.grids}>
+            <Grid2D
+              gridData={state.frontGrid}
+              label="Front (XY)"
+              size={state.resolution}
+              tool={state.tool}
+              view="front"
+              modelVoxels={effectiveModelVoxels}
+              onSetCell={handleFrontCellChange}
+              onFillCell={handleFrontCellFill}
+              onViewClick={handleFrontView}
             />
+            <Grid2D
+              gridData={state.sideGrid}
+              label="Side (ZY)"
+              size={state.resolution}
+              tool={state.tool}
+              view="side"
+              modelVoxels={effectiveModelVoxels}
+              onSetCell={handleSideCellChange}
+              onFillCell={handleSideCellFill}
+              onViewClick={handleRightView}
+            />
+            <Grid2D
+              gridData={state.topGrid}
+              label="Top (XZ)"
+              size={state.resolution}
+              tool={state.tool}
+              view="top"
+              modelVoxels={effectiveModelVoxels}
+              onSetCell={handleTopCellChange}
+              onFillCell={handleTopCellFill}
+              onViewClick={handleTopView}
+            />
+
+            <div className={styles.piecePreview}>
+              <Viewport3D
+                mode="piece"
+                pieceVoxels={state.pieceVoxels}
+                palette={state.palette}
+                resolution={state.resolution}
+                cameraMode={state.cameraMode}
+                cameraView={pieceCameraView}
+                viewResetToken={cameraViewResetToken}
+                onCameraViewChange={setPieceCameraView}
+              />
+            </div>
+          </div>
+
+          <div className={styles.bottom}>
+            <div className={styles.leftBottom}>
+              <PieceList
+                pieces={state.pieces}
+                resolution={state.resolution}
+                editingPieceId={state.editingPieceId}
+                onSelectPiece={handleLoadPiece}
+                onRenamePiece={handleRenamePiece}
+                onDeletePiece={handleDeletePiece}
+              />
+            </div>
+
+            <div className={styles.centerBottom}>
+              <ColorPalette
+                palette={state.palette}
+                selectedColor={state.selectedColor}
+                onColorSelect={handleColorSelect}
+                onColorChange={handlePaletteColorChange}
+              />
+            </div>
+
+            <div className={styles.rightBottom}>
+              <Viewport3D
+                mode="model"
+                modelVoxels={state.modelVoxels}
+                editingPieceVoxels={previewPieceOverlayVoxels}
+                modelColors={state.modelColors}
+                palette={state.palette}
+                resolution={state.resolution}
+                cameraMode={state.cameraMode}
+                cameraView={modelCameraView}
+                viewResetToken={cameraViewResetToken}
+                onVoxelClick={handleVoxelClick}
+                onCameraViewChange={setModelCameraView}
+              />
+            </div>
           </div>
         </div>
-
-        <div className={styles.bottom}>
-          <div className={styles.leftBottom}>
-            <PieceList
-              pieces={state.pieces}
-              resolution={state.resolution}
-              editingPieceId={state.editingPieceId}
-              onSelectPiece={handleLoadPiece}
-              onRenamePiece={handleRenamePiece}
-              onDeletePiece={handleDeletePiece}
-            />
-          </div>
-
-          <div className={styles.centerBottom}>
-            <ColorPalette
-              palette={state.palette}
-              selectedColor={state.selectedColor}
-              onColorSelect={handleColorSelect}
-              onColorChange={handlePaletteColorChange}
-            />
-          </div>
-
-          <div className={styles.rightBottom}>
-            <Viewport3D
-              mode="model"
-              modelVoxels={state.modelVoxels}
-              editingPieceVoxels={previewPieceOverlayVoxels}
-              modelColors={state.modelColors}
-              palette={state.palette}
-              resolution={state.resolution}
-              cameraMode={state.cameraMode}
-              cameraView={modelCameraView}
-              viewResetToken={cameraViewResetToken}
-              onVoxelClick={handleVoxelClick}
-              onCameraViewChange={setModelCameraView}
-            />
-          </div>
-        </div>
-      </div>
+      </Suspense>
     </div>
   );
 }

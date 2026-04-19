@@ -10,6 +10,15 @@
     linear-gradient(145deg, #0c131f, #141f2f 40%, #111b2c);
 }
 
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  color: #b7c9dc;
+  font-size: 0.88rem;
+  border-top: 1px solid rgba(132, 157, 182, 0.22);
+}
+
 .content {
   display: grid;
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
