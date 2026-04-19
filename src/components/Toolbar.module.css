@@ -14,25 +14,6 @@
   gap: 0.35rem;
 }
 
-.toolRows {
-  display: grid;
-  gap: 0.28rem;
-}
-
-.toolRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-}
-
-.subLabel {
-  width: 3.1rem;
-  font-size: 0.62rem;
-  color: #88a2bc;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .label {
   font-size: 0.66rem;
   color: #9fb3c8;

@@ -46,15 +46,6 @@
   min-height: 0;
 }
 
-.hint {
-  font-size: 0.75rem;
-  color: #a1b2c4;
-  border: 1px solid rgba(124, 151, 180, 0.35);
-  border-radius: 0.5rem;
-  background: rgba(7, 12, 20, 0.52);
-  padding: 0.45rem 0.6rem;
-}
-
 @media (max-width: 1160px) {
   .content {
     grid-template-rows: auto auto;
