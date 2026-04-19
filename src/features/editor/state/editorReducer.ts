@@ -71,7 +71,7 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'SET_RESOLUTION': {
       if (action.resolution === state.resolution) return state;
-      return getInitialState(action.resolution);
+      return updateState(state, getInitialState(action.resolution), true);
     }
 
     case 'SET_CELL': {
@@ -136,7 +136,9 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
       const pieces = state.pieces.map((piece) => (
         piece.id === action.pieceId ? { ...piece, name } : piece
       ));
-      return { ...state, pieces };
+      const unchanged = state.pieces.every((piece, index) => piece.name === pieces[index]?.name);
+      if (unchanged) return state;
+      return updateState(state, { ...state, pieces }, true);
     }
 
     case 'DELETE_PIECE': {
@@ -195,7 +197,7 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         voxels: new Uint8Array(piece.voxels),
       }));
       const resolution = loaded.resolution || DEFAULT_RESOLUTION;
-      return {
+      return updateState(state, {
         ...getInitialState(resolution),
         ...loaded,
         frontGrid: new Uint8Array(loaded.frontGrid || createEmptyGrid(resolution)),
@@ -212,11 +214,11 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         cameraMode: loaded.cameraMode || 'perspective',
         cameraView: loaded.cameraView || 'perspective',
         pieceCount: pieces.length,
-      };
+      }, true);
     }
 
     case 'NEW_PROJECT':
-      return getInitialState(state.resolution);
+      return updateState(state, getInitialState(state.resolution), true);
 
     default:
       return state;

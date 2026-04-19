@@ -4,6 +4,7 @@ const MAX_HISTORY = 200;
 
 export function createSnapshot(state: EditorState): EditorSnapshot {
   return {
+    resolution: state.resolution,
     frontGrid: new Uint8Array(state.frontGrid),
     sideGrid: new Uint8Array(state.sideGrid),
     topGrid: new Uint8Array(state.topGrid),
@@ -15,6 +16,11 @@ export function createSnapshot(state: EditorState): EditorSnapshot {
     editingPieceId: state.editingPieceId,
     modelVoxels: new Uint8Array(state.modelVoxels),
     modelColors: new Uint8Array(state.modelColors),
+    palette: [...state.palette],
+    selectedColor: state.selectedColor,
+    tool: state.tool,
+    cameraMode: state.cameraMode,
+    cameraView: state.cameraView,
     pieceCount: state.pieceCount,
   };
 }
@@ -22,6 +28,7 @@ export function createSnapshot(state: EditorState): EditorSnapshot {
 export function applySnapshot(state: EditorState, snapshot: EditorSnapshot): EditorState {
   return {
     ...state,
+    resolution: snapshot.resolution,
     frontGrid: new Uint8Array(snapshot.frontGrid),
     sideGrid: new Uint8Array(snapshot.sideGrid),
     topGrid: new Uint8Array(snapshot.topGrid),
@@ -33,6 +40,11 @@ export function applySnapshot(state: EditorState, snapshot: EditorSnapshot): Edi
     editingPieceId: snapshot.editingPieceId,
     modelVoxels: new Uint8Array(snapshot.modelVoxels),
     modelColors: new Uint8Array(snapshot.modelColors),
+    palette: [...snapshot.palette],
+    selectedColor: snapshot.selectedColor,
+    tool: snapshot.tool,
+    cameraMode: snapshot.cameraMode,
+    cameraView: snapshot.cameraView,
     pieceCount: snapshot.pieceCount,
   };
 }
