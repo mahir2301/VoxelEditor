@@ -9,7 +9,7 @@ function buildVoxelGeometryForExport(
   voxels: Uint8Array,
   colors: Uint8Array,
   palette: string[],
-  resolution: number,
+  resolution: number
 ): THREE.BufferGeometry {
   const size = resolution;
   const positions = [];
@@ -21,39 +21,71 @@ function buildVoxelGeometryForExport(
     // Top (Y+): flipped from (0,1,0),(0,1,1),(1,1,1),(1,1,0)
     {
       dir: [0, 1, 0],
-      verts: [[0, 1, 0], [1, 1, 0], [1, 1, 1], [0, 1, 1]]
+      verts: [
+        [0, 1, 0],
+        [1, 1, 0],
+        [1, 1, 1],
+        [0, 1, 1]
+      ]
     },
     // Bottom (Y-): flipped from (0,0,0),(1,0,0),(1,0,1),(0,0,1)
     {
       dir: [0, -1, 0],
-      verts: [[0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0]]
+      verts: [
+        [0, 0, 0],
+        [0, 0, 1],
+        [1, 0, 1],
+        [1, 0, 0]
+      ]
     },
     // Right (X+): flipped from (1,0,1),(1,0,0),(1,1,0),(1,1,1)
     {
       dir: [1, 0, 0],
-      verts: [[1, 0, 1], [1, 1, 1], [1, 1, 0], [1, 0, 0]]
+      verts: [
+        [1, 0, 1],
+        [1, 1, 1],
+        [1, 1, 0],
+        [1, 0, 0]
+      ]
     },
     // Left (X-): flipped from (0,1,0),(0,0,0),(0,0,1),(0,1,1)
     {
       dir: [-1, 0, 0],
-      verts: [[0, 1, 0], [0, 1, 1], [0, 0, 1], [0, 0, 0]]
+      verts: [
+        [0, 1, 0],
+        [0, 1, 1],
+        [0, 0, 1],
+        [0, 0, 0]
+      ]
     },
     // Front (Z+): flipped from (0,0,1),(1,0,1),(1,1,1),(0,1,1)
     {
       dir: [0, 0, 1],
-      verts: [[0, 0, 1], [0, 1, 1], [1, 1, 1], [1, 0, 1]]
+      verts: [
+        [0, 0, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+        [1, 0, 1]
+      ]
     },
     // Back (Z-): flipped from (0,0,0),(0,1,0),(1,1,0),(1,0,0)
     {
       dir: [0, 0, -1],
-      verts: [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]
+      verts: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [0, 1, 0]
+      ]
     }
   ];
 
   let vertexCount = 0;
 
   for (let i = 0; i < voxels.length; i += 1) {
-    if (!voxels[i]) continue;
+    if (!voxels[i]) {
+      continue;
+    }
 
     const x = i % size;
     const y = Math.floor(i / size) % size;
@@ -72,7 +104,9 @@ function buildVoxelGeometryForExport(
       const nz = z + face.dir[2];
 
       if (nx >= 0 && nx < size && ny >= 0 && ny < size && nz >= 0 && nz < size) {
-        if (voxels[nx + ny * size + nz * size * size]) continue;
+        if (voxels[nx + ny * size + nz * size * size]) {
+          continue;
+        }
       }
 
       for (const v of face.verts) {
@@ -81,8 +115,12 @@ function buildVoxelGeometryForExport(
       }
 
       indices.push(
-        vertexCount, vertexCount + 2, vertexCount + 1,
-        vertexCount, vertexCount + 3, vertexCount + 2
+        vertexCount,
+        vertexCount + 2,
+        vertexCount + 1,
+        vertexCount,
+        vertexCount + 3,
+        vertexCount + 2
       );
       vertexCount += 4;
     }
@@ -100,11 +138,11 @@ function buildVoxelGeometryForExport(
 /**
  * Export the assembled model as a GLB file (Unity-compatible).
  */
-export function exportModelAsGLB(
+export async function exportModelAsGLB(
   modelVoxels: Uint8Array,
   modelColors: Uint8Array,
   palette: string[],
-  resolution: number,
+  resolution: number
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const geometry = buildVoxelGeometryForExport(modelVoxels, modelColors, palette, resolution);
@@ -115,9 +153,9 @@ export function exportModelAsGLB(
     }
 
     const material = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.7,
       metalness: 0.1,
+      roughness: 0.7,
+      vertexColors: true
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -168,7 +206,7 @@ export function exportProject(projectData: SerializedProject): void {
 /**
  * Import project from .voxproj JSON file.
  */
-export function importProject(file: File): Promise<SerializedProject> {
+export async function importProject(file: File): Promise<SerializedProject> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -176,24 +214,24 @@ export function importProject(file: File): Promise<SerializedProject> {
         const text = typeof e.target?.result === 'string' ? e.target.result : '';
         const data = JSON.parse(text) as Partial<SerializedProject>;
         const parsed: SerializedProject = {
-          version: data.version || 1,
-          resolution: data.resolution || 16,
-          pieces: (data.pieces || []).map((p) => ({
-            ...p,
-            voxels: Array.from(new Uint8Array(Object.values(p.voxels || []))),
-          })),
-          frontGrid: Array.from(new Uint8Array(Object.values(data.frontGrid || []))),
-          sideGrid: Array.from(new Uint8Array(Object.values(data.sideGrid || []))),
-          topGrid: Array.from(new Uint8Array(Object.values(data.topGrid || []))),
-          modelVoxels: Array.from(new Uint8Array(Object.values(data.modelVoxels || []))),
-          modelColors: Array.from(new Uint8Array(Object.values(data.modelColors || []))),
-          palette: data.palette || [],
           cameraMode: data.cameraMode,
           cameraView: data.cameraView,
+          frontGrid: [...new Uint8Array(Object.values(data.frontGrid || []))],
+          modelColors: [...new Uint8Array(Object.values(data.modelColors || []))],
+          modelVoxels: [...new Uint8Array(Object.values(data.modelVoxels || []))],
+          palette: data.palette || [],
+          pieces: (data.pieces || []).map((p) => ({
+            ...p,
+            voxels: [...new Uint8Array(Object.values(p.voxels || []))]
+          })),
+          resolution: data.resolution || 16,
+          sideGrid: [...new Uint8Array(Object.values(data.sideGrid || []))],
+          topGrid: [...new Uint8Array(Object.values(data.topGrid || []))],
+          version: data.version || 1
         };
         resolve(parsed);
-      } catch (err) {
-        reject(err);
+      } catch (error) {
+        reject(error);
       }
     };
     reader.onerror = () => reject(reader.error);
@@ -206,20 +244,20 @@ export function importProject(file: File): Promise<SerializedProject> {
  */
 export function serializeState(state: EditorState): SerializedProject {
   return {
-    version: 1,
-    resolution: state.resolution,
-    frontGrid: Array.from(state.frontGrid),
-    sideGrid: Array.from(state.sideGrid),
-    topGrid: Array.from(state.topGrid),
+    cameraMode: state.cameraMode,
+    cameraView: state.cameraView,
+    frontGrid: [...state.frontGrid],
+    modelColors: [...state.modelColors],
+    modelVoxels: [...state.modelVoxels],
+    palette: [...state.palette],
     pieces: state.pieces.map((p) => ({
       id: p.id,
       name: p.name,
-      voxels: Array.from(p.voxels),
+      voxels: [...p.voxels]
     })),
-    modelVoxels: Array.from(state.modelVoxels),
-    modelColors: Array.from(state.modelColors),
-    palette: [...state.palette],
-    cameraMode: state.cameraMode,
-    cameraView: state.cameraView,
+    resolution: state.resolution,
+    sideGrid: [...state.sideGrid],
+    topGrid: [...state.topGrid],
+    version: 1
   };
 }

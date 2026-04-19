@@ -1,24 +1,36 @@
 import { useCallback, useMemo, useState } from 'react';
-import Grid2D from './components/Grid2D';
-import Viewport3D from './components/Viewport3D';
-import PieceList from './components/PieceList';
 import ColorPalette from './components/ColorPalette';
-import Toolbar from './components/Toolbar';
+import Grid2D from './components/Grid2D';
 import LandingScreen from './components/LandingScreen';
+import PieceList from './components/PieceList';
+import Toolbar from './components/Toolbar';
 import ConfirmDialog from './components/ui/ConfirmDialog';
-import { useVoxelState } from './hooks/useVoxelState';
+import Viewport3D from './components/Viewport3D';
 import { loadStateFromStorage } from './features/editor/state/persistence';
-import type { CameraMode, CameraView, EditorAction, EditorTool, GridName, SerializedProject } from './features/editor/state/types';
+import type {
+  CameraMode,
+  CameraView,
+  EditorAction,
+  EditorTool,
+  GridName,
+  SerializedProject
+} from './features/editor/state/types';
+import { useVoxelState } from './hooks/useVoxelState';
 import styles from './App.module.css';
 
 function getToolHint(tool: EditorTool): string {
-  if (tool === 'paint') return 'Click model voxels to paint.';
-  if (tool === 'erase') return 'Click and drag in grids to erase.';
+  if (tool === 'paint') {
+    return 'Click model voxels to paint.';
+  }
+  if (tool === 'erase') {
+    return 'Click and drag in grids to erase.';
+  }
   return 'Click and drag in grids to draw.';
 }
 
 export default function App() {
-  const { state, dispatch, canUndo, canRedo, getEffectiveModelVoxels, getEditingPieceVoxels } = useVoxelState();
+  const { state, dispatch, canUndo, canRedo, getEffectiveModelVoxels, getEditingPieceVoxels } =
+    useVoxelState();
   const [screen, setScreen] = useState<'landing' | 'editor'>('landing');
   const [landingResolution, setLandingResolution] = useState(16);
   const [hasAutosave, setHasAutosave] = useState(() => Boolean(loadStateFromStorage()));
@@ -26,22 +38,28 @@ export default function App() {
   const [pendingBackToLanding, setPendingBackToLanding] = useState(false);
   const [hasUnsavedManualChanges, setHasUnsavedManualChanges] = useState(false);
   const [pieceCameraView, setPieceCameraView] = useState<CameraView>(() => state.cameraView);
-  const [modelCameraView, setModelCameraView] = useState<CameraView>(
-    () => (state.cameraMode === 'isometric' ? 'isometric' : state.cameraView),
+  const [modelCameraView, setModelCameraView] = useState<CameraView>(() =>
+    state.cameraMode === 'isometric' ? 'isometric' : state.cameraView
   );
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const effectiveModelVoxels = getEffectiveModelVoxels();
   const editingPieceVoxels = getEditingPieceVoxels();
-  const previewPieceOverlayVoxels = editingPieceVoxels || (hasPieceVoxels ? state.pieceVoxels : null);
+  const previewPieceOverlayVoxels =
+    editingPieceVoxels || (hasPieceVoxels ? state.pieceVoxels : null);
 
   const markDirty = useCallback(() => setHasUnsavedManualChanges(true), []);
   const markClean = useCallback(() => setHasUnsavedManualChanges(false), []);
 
-  const runAction = useCallback((action: EditorAction, affectsModel = false) => {
-    dispatch(action);
-    if (affectsModel) markDirty();
-  }, [dispatch, markDirty]);
+  const runAction = useCallback(
+    (action: EditorAction, affectsModel = false) => {
+      dispatch(action);
+      if (affectsModel) {
+        markDirty();
+      }
+    },
+    [dispatch, markDirty]
+  );
 
   const syncLocalCameraViews = useCallback((mode: CameraMode, view: CameraView) => {
     const effectiveView = mode === 'isometric' ? 'isometric' : view;
@@ -49,17 +67,23 @@ export default function App() {
     setModelCameraView(effectiveView);
   }, []);
 
-  const openEditorWithProject = useCallback((project: SerializedProject) => {
-    dispatch({ type: 'LOAD_PROJECT', state: project });
-    setLandingResolution(project.resolution || 16);
-    syncLocalCameraViews(project.cameraMode || 'perspective', project.cameraView || 'perspective');
-    markClean();
-    setScreen('editor');
-  }, [dispatch, markClean, syncLocalCameraViews]);
+  const openEditorWithProject = useCallback(
+    (project: SerializedProject) => {
+      dispatch({ state: project, type: 'LOAD_PROJECT' });
+      setLandingResolution(project.resolution || 16);
+      syncLocalCameraViews(
+        project.cameraMode || 'perspective',
+        project.cameraView || 'perspective'
+      );
+      markClean();
+      setScreen('editor');
+    },
+    [dispatch, markClean, syncLocalCameraViews]
+  );
 
   const handleCreateProject = useCallback(() => {
     if (state.resolution !== landingResolution) {
-      runAction({ type: 'SET_RESOLUTION', resolution: landingResolution });
+      runAction({ resolution: landingResolution, type: 'SET_RESOLUTION' });
     } else {
       runAction({ type: 'NEW_PROJECT' });
     }
@@ -77,34 +101,48 @@ export default function App() {
     openEditorWithProject(autosave);
   }, [openEditorWithProject]);
 
-  const handleSetCell = useCallback((grid: GridName, index: number, value: number) => {
-    runAction({ type: 'SET_CELL', grid, index, value }, true);
-  }, [runAction]);
+  const handleSetCell = useCallback(
+    (grid: GridName, index: number, value: number) => {
+      runAction({ grid, index, type: 'SET_CELL', value }, true);
+    },
+    [runAction]
+  );
 
-  const handleLoadPiece = useCallback((pieceId: string) => {
-    const hasUnsavedDraft = state.frontGrid.some(Boolean) || state.sideGrid.some(Boolean) || state.topGrid.some(Boolean);
-    if (hasUnsavedDraft) {
-      setPendingPieceId(pieceId);
-      return;
-    }
-    runAction({ type: 'LOAD_PIECE_FOR_EDITING', pieceId });
-  }, [runAction, state.frontGrid, state.sideGrid, state.topGrid]);
+  const handleLoadPiece = useCallback(
+    (pieceId: string) => {
+      const hasUnsavedDraft =
+        state.frontGrid.some(Boolean) ||
+        state.sideGrid.some(Boolean) ||
+        state.topGrid.some(Boolean);
+      if (hasUnsavedDraft) {
+        setPendingPieceId(pieceId);
+        return;
+      }
+      runAction({ pieceId, type: 'LOAD_PIECE_FOR_EDITING' });
+    },
+    [runAction, state.frontGrid, state.sideGrid, state.topGrid]
+  );
 
   const handleConfirmPieceSwitch = useCallback(() => {
-    if (!pendingPieceId) return;
-    runAction({ type: 'LOAD_PIECE_FOR_EDITING', pieceId: pendingPieceId });
+    if (!pendingPieceId) {
+      return;
+    }
+    runAction({ pieceId: pendingPieceId, type: 'LOAD_PIECE_FOR_EDITING' });
     setPendingPieceId(null);
   }, [pendingPieceId, runAction]);
 
-  const handleVoxelClick = useCallback((index: number) => {
-    if (state.tool === 'paint') {
-      runAction({ type: 'PAINT_VOXEL', index, colorIndex: state.selectedColor }, true);
-      return;
-    }
-    if (state.tool === 'erase') {
-      runAction({ type: 'PAINT_VOXEL', index, colorIndex: 0 }, true);
-    }
-  }, [runAction, state.selectedColor, state.tool]);
+  const handleVoxelClick = useCallback(
+    (index: number) => {
+      if (state.tool === 'paint') {
+        runAction({ colorIndex: state.selectedColor, index, type: 'PAINT_VOXEL' }, true);
+        return;
+      }
+      if (state.tool === 'erase') {
+        runAction({ colorIndex: 0, index, type: 'PAINT_VOXEL' }, true);
+      }
+    },
+    [runAction, state.selectedColor, state.tool]
+  );
 
   const finishPieceAction = state.editingPieceId ? 'FINISH_EDITING' : 'PUSH_PIECE';
 
@@ -154,9 +192,9 @@ export default function App() {
         canUndo={canUndo}
         canRedo={canRedo}
         hasPieceVoxels={hasPieceVoxels}
-        onSetTool={(tool: EditorTool) => runAction({ type: 'SET_TOOL', tool })}
+        onSetTool={(tool: EditorTool) => runAction({ tool, type: 'SET_TOOL' })}
         onSetCameraMode={(mode: CameraMode) => {
-          runAction({ type: 'SET_CAMERA_MODE', mode });
+          runAction({ mode, type: 'SET_CAMERA_MODE' });
           if (mode === 'perspective') {
             runAction({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
             setPieceCameraView('perspective');
@@ -250,10 +288,10 @@ export default function App() {
               editingPieceId={state.editingPieceId}
               onSelectPiece={handleLoadPiece}
               onRenamePiece={(pieceId, name) => {
-                runAction({ type: 'RENAME_PIECE', pieceId, name }, true);
+                runAction({ name, pieceId, type: 'RENAME_PIECE' }, true);
               }}
               onDeletePiece={(pieceId) => {
-                runAction({ type: 'DELETE_PIECE', pieceId }, true);
+                runAction({ pieceId, type: 'DELETE_PIECE' }, true);
               }}
             />
           </div>
@@ -262,9 +300,9 @@ export default function App() {
             <ColorPalette
               palette={state.palette}
               selectedColor={state.selectedColor}
-              onColorSelect={(colorIndex: number) => runAction({ type: 'SET_COLOR', colorIndex })}
+              onColorSelect={(colorIndex: number) => runAction({ colorIndex, type: 'SET_COLOR' })}
               onColorChange={(colorIndex, color) => {
-                runAction({ type: 'SET_PALETTE_COLOR', colorIndex, color }, true);
+                runAction({ color, colorIndex, type: 'SET_PALETTE_COLOR' }, true);
               }}
             />
             <div className={styles.hint}>{getToolHint(state.tool)}</div>

@@ -11,14 +11,20 @@ interface Props extends Omit<AriaButtonProps, 'className'> {
   isActive?: boolean;
 }
 
-export default function Button({ className, variant = 'default', isActive = false, ...props }: Props) {
-  const variantClass = variant === 'accent'
-    ? styles.accent
-    : variant === 'success'
-      ? styles.success
-      : variant === 'danger'
-        ? styles.danger
-        : '';
+export default function Button({
+  className,
+  variant = 'default',
+  isActive = false,
+  ...props
+}: Props) {
+  const variantClass =
+    variant === 'accent'
+      ? styles.accent
+      : variant === 'success'
+        ? styles.success
+        : variant === 'danger'
+          ? styles.danger
+          : '';
 
   return (
     <AriaButton

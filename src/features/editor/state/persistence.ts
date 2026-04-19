@@ -9,7 +9,9 @@ export function saveStateToStorage(state: EditorState): void {
 
 export function loadStateFromStorage(): SerializedProject | null {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     return JSON.parse(raw);
   } catch {

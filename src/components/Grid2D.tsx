@@ -31,15 +31,10 @@ interface Props {
   view: 'front' | 'side' | 'top';
 }
 
-function drawCanvas(ctx: CanvasRenderingContext2D, {
-  gridData,
-  size,
-  canvasDim,
-  cellSize,
-  hoverCell,
-  modelVoxels,
-  view,
-}: DrawCanvasInput): void {
+function drawCanvas(
+  ctx: CanvasRenderingContext2D,
+  { gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view }: DrawCanvasInput
+): void {
   ctx.fillStyle = '#111b2a';
   ctx.fillRect(0, 0, canvasDim, canvasDim);
 
@@ -85,13 +80,17 @@ function drawCanvas(ctx: CanvasRenderingContext2D, {
   if (modelVoxels) {
     const silhouette = new Uint8Array(size * size);
     for (let i = 0; i < modelVoxels.length; i += 1) {
-      if (!modelVoxels[i]) continue;
+      if (!modelVoxels[i]) {
+        continue;
+      }
       const x = i % size;
       const y = Math.floor(i / size) % size;
       const z = Math.floor(i / (size * size));
       let col = x;
       let row = z;
-      if (view === 'front') row = size - 1 - y;
+      if (view === 'front') {
+        row = size - 1 - y;
+      }
       if (view === 'side') {
         col = size - 1 - z;
         row = size - 1 - y;
@@ -104,15 +103,29 @@ function drawCanvas(ctx: CanvasRenderingContext2D, {
     ctx.beginPath();
     for (let row = 0; row < size; row += 1) {
       for (let col = 0; col < size; col += 1) {
-        if (!silhouette[col + row * size]) continue;
+        if (!silhouette[col + row * size]) {
+          continue;
+        }
         const x1 = col * cellSize;
         const y1 = row * cellSize;
         const x2 = x1 + cellSize;
         const y2 = y1 + cellSize;
-        if (col === 0 || !silhouette[col - 1 + row * size]) { ctx.moveTo(x1, y1); ctx.lineTo(x1, y2); }
-        if (col === size - 1 || !silhouette[col + 1 + row * size]) { ctx.moveTo(x2, y1); ctx.lineTo(x2, y2); }
-        if (row === 0 || !silhouette[col + (row - 1) * size]) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); }
-        if (row === size - 1 || !silhouette[col + (row + 1) * size]) { ctx.moveTo(x1, y2); ctx.lineTo(x2, y2); }
+        if (col === 0 || !silhouette[col - 1 + row * size]) {
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x1, y2);
+        }
+        if (col === size - 1 || !silhouette[col + 1 + row * size]) {
+          ctx.moveTo(x2, y1);
+          ctx.lineTo(x2, y2);
+        }
+        if (row === 0 || !silhouette[col + (row - 1) * size]) {
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y1);
+        }
+        if (row === size - 1 || !silhouette[col + (row + 1) * size]) {
+          ctx.moveTo(x1, y2);
+          ctx.lineTo(x2, y2);
+        }
       }
     }
     ctx.stroke();
@@ -133,7 +146,7 @@ export default function Grid2D({
   tool,
   onViewClick,
   modelVoxels,
-  view,
+  view
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +157,9 @@ export default function Grid2D({
 
   useEffect(() => {
     const updateSize = () => {
-      if (!wrapRef.current) return;
+      if (!wrapRef.current) {
+        return;
+      }
       const rect = wrapRef.current.getBoundingClientRect();
       const nextDim = Math.max(120, Math.floor(Math.min(rect.width - 8, rect.height - 8)));
       setCanvasDim(nextDim);
@@ -152,7 +167,9 @@ export default function Grid2D({
 
     updateSize();
     const observer = new ResizeObserver(updateSize);
-    if (wrapRef.current) observer.observe(wrapRef.current);
+    if (wrapRef.current) {
+      observer.observe(wrapRef.current);
+    }
     return () => observer.disconnect();
   }, []);
 
@@ -160,45 +177,73 @@ export default function Grid2D({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    drawCanvas(context, { gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view });
-  }, [canvasDim, cellSize, gridData, hoverCell, modelVoxels, size, view]);
-
-  const getCell = useCallback((event: ReactMouseEvent<HTMLCanvasElement>): HoverCell | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(((event.clientX - rect.left) * (canvasDim / rect.width)) / cellSize);
-    const y = Math.floor(((event.clientY - rect.top) * (canvasDim / rect.height)) / cellSize);
-    if (x < 0 || x >= size || y < 0 || y >= size) return null;
-    return { x, y, index: x + y * size };
-  }, [canvasDim, cellSize, size]);
-
-  const applyTool = useCallback((index: number) => {
-    if (tool === 'erase') {
-      onSetCell(index, 0);
+    if (!canvas) {
       return;
     }
-    if (tool !== 'draw') return;
-    onSetCell(index, drawValueRef.current);
-  }, [onSetCell, tool]);
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return;
+    }
+    drawCanvas(context, { canvasDim, cellSize, gridData, hoverCell, modelVoxels, size, view });
+  }, [canvasDim, cellSize, gridData, hoverCell, modelVoxels, size, view]);
 
-  const handlePointerDown = useCallback((event: ReactMouseEvent<HTMLCanvasElement>) => {
-    const cell = getCell(event);
-    if (!cell) return;
-    drawingRef.current = true;
-    if (tool === 'draw') drawValueRef.current = gridData[cell.index] ? 0 : 1;
-    applyTool(cell.index);
-  }, [applyTool, getCell, gridData, tool]);
+  const getCell = useCallback(
+    (event: ReactMouseEvent<HTMLCanvasElement>): HoverCell | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return null;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor(((event.clientX - rect.left) * (canvasDim / rect.width)) / cellSize);
+      const y = Math.floor(((event.clientY - rect.top) * (canvasDim / rect.height)) / cellSize);
+      if (x < 0 || x >= size || y < 0 || y >= size) {
+        return null;
+      }
+      return { index: x + y * size, x, y };
+    },
+    [canvasDim, cellSize, size]
+  );
 
-  const handlePointerMove = useCallback((event: ReactMouseEvent<HTMLCanvasElement>) => {
-    const cell = getCell(event);
-    setHoverCell(cell);
-    if (!drawingRef.current || !cell) return;
-    applyTool(cell.index);
-  }, [applyTool, getCell]);
+  const applyTool = useCallback(
+    (index: number) => {
+      if (tool === 'erase') {
+        onSetCell(index, 0);
+        return;
+      }
+      if (tool !== 'draw') {
+        return;
+      }
+      onSetCell(index, drawValueRef.current);
+    },
+    [onSetCell, tool]
+  );
+
+  const handlePointerDown = useCallback(
+    (event: ReactMouseEvent<HTMLCanvasElement>) => {
+      const cell = getCell(event);
+      if (!cell) {
+        return;
+      }
+      drawingRef.current = true;
+      if (tool === 'draw') {
+        drawValueRef.current = gridData[cell.index] ? 0 : 1;
+      }
+      applyTool(cell.index);
+    },
+    [applyTool, getCell, gridData, tool]
+  );
+
+  const handlePointerMove = useCallback(
+    (event: ReactMouseEvent<HTMLCanvasElement>) => {
+      const cell = getCell(event);
+      setHoverCell(cell);
+      if (!drawingRef.current || !cell) {
+        return;
+      }
+      applyTool(cell.index);
+    },
+    [applyTool, getCell]
+  );
 
   const handleStopDraw = useCallback(() => {
     drawingRef.current = false;

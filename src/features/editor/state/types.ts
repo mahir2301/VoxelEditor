@@ -1,6 +1,14 @@
 export type EditorTool = 'draw' | 'erase' | 'paint';
 export type CameraMode = 'perspective' | 'isometric';
-export type CameraView = 'front' | 'back' | 'right' | 'left' | 'top' | 'bottom' | 'isometric' | 'perspective';
+export type CameraView =
+  | 'front'
+  | 'back'
+  | 'right'
+  | 'left'
+  | 'top'
+  | 'bottom'
+  | 'isometric'
+  | 'perspective';
 export type GridName = 'front' | 'side' | 'top';
 
 export interface Piece {
