@@ -10,6 +10,7 @@ export interface Piece {
 }
 
 export interface EditorSnapshot {
+  resolution: number;
   frontGrid: Uint8Array;
   sideGrid: Uint8Array;
   topGrid: Uint8Array;
@@ -18,6 +19,11 @@ export interface EditorSnapshot {
   editingPieceId: string | null;
   modelVoxels: Uint8Array;
   modelColors: Uint8Array;
+  palette: string[];
+  selectedColor: number;
+  tool: EditorTool;
+  cameraMode: CameraMode;
+  cameraView: CameraView;
   pieceCount: number;
 }
 
