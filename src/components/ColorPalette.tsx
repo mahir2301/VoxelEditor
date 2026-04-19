@@ -33,6 +33,15 @@ export default function ColorPalette({
 }: Props) {
   const selectedHex = palette[selectedColor] || '#808080';
 
+  const handlers = useMemo(
+    () => ({
+      onColorPickerChange: (color: { toString: (format: 'hex') => string }) => {
+        onColorChange(selectedColor, color.toString('hex'));
+      }
+    }),
+    [onColorChange, selectedColor]
+  );
+
   const options = useMemo(
     () => palette.map((color, index) => ({ label: `Slot ${index + 1} - ${color}`, value: index })),
     [palette]
@@ -49,7 +58,7 @@ export default function ColorPalette({
 
       <ColorPicker
         value={parseColor(selectedHex).toFormat('hsb')}
-        onChange={(color) => onColorChange(selectedColor, color.toString('hex'))}
+        onChange={handlers.onColorPickerChange}
       >
         <Label className={styles.label}>Color</Label>
         <DialogTrigger>

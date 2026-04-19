@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { CameraMode, EditorState, EditorTool } from '../features/editor/state/types';
 import { exportModelAsGLB, exportProject, serializeState } from '../utils/exportGLB';
 import Button from './ui/Button';
@@ -36,17 +37,56 @@ export default function Toolbar({
 }: Props) {
   const isEditing = Boolean(state.editingPieceId);
 
+  const handlers = useMemo(
+    () => ({
+      exportGlb: async () => {
+        try {
+          await exportModelAsGLB(
+            state.modelVoxels,
+            state.modelColors,
+            state.palette,
+            state.resolution
+          );
+          onManualCheckpoint();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          window.alert(`Export failed: ${message}`);
+        }
+      },
+      saveProject: () => {
+        exportProject(serializeState(state));
+        onManualCheckpoint();
+      },
+      setDrawTool: () => {
+        onSetTool('draw');
+      },
+      setEraseTool: () => {
+        onSetTool('erase');
+      },
+      setIsometricMode: () => {
+        onSetCameraMode('isometric');
+      },
+      setPaintTool: () => {
+        onSetTool('paint');
+      },
+      setPerspectiveMode: () => {
+        onSetCameraMode('perspective');
+      }
+    }),
+    [onManualCheckpoint, onSetCameraMode, onSetTool, state]
+  );
+
   return (
     <div className={styles.toolbar}>
       <div className={styles.group}>
         <span className={styles.label}>Tools</span>
-        <Button isActive={state.tool === 'draw'} onPress={() => onSetTool('draw')}>
+        <Button isActive={state.tool === 'draw'} onPress={handlers.setDrawTool}>
           Draw
         </Button>
-        <Button isActive={state.tool === 'erase'} onPress={() => onSetTool('erase')}>
+        <Button isActive={state.tool === 'erase'} onPress={handlers.setEraseTool}>
           Erase
         </Button>
-        <Button isActive={state.tool === 'paint'} onPress={() => onSetTool('paint')}>
+        <Button isActive={state.tool === 'paint'} onPress={handlers.setPaintTool}>
           Paint
         </Button>
       </div>
@@ -55,16 +95,10 @@ export default function Toolbar({
 
       <div className={styles.group}>
         <span className={styles.label}>Camera</span>
-        <Button
-          isActive={state.cameraMode === 'perspective'}
-          onPress={() => onSetCameraMode('perspective')}
-        >
+        <Button isActive={state.cameraMode === 'perspective'} onPress={handlers.setPerspectiveMode}>
           Perspective
         </Button>
-        <Button
-          isActive={state.cameraMode === 'isometric'}
-          onPress={() => onSetCameraMode('isometric')}
-        >
+        <Button isActive={state.cameraMode === 'isometric'} onPress={handlers.setIsometricMode}>
           Isometric
         </Button>
       </div>
@@ -106,31 +140,8 @@ export default function Toolbar({
 
       <div className={styles.group}>
         <span className={styles.label}>Project</span>
-        <Button
-          onPress={() => {
-            exportProject(serializeState(state));
-            onManualCheckpoint();
-          }}
-        >
-          Save
-        </Button>
-        <Button
-          variant="success"
-          onPress={async () => {
-            try {
-              await exportModelAsGLB(
-                state.modelVoxels,
-                state.modelColors,
-                state.palette,
-                state.resolution
-              );
-              onManualCheckpoint();
-            } catch (error) {
-              const message = error instanceof Error ? error.message : 'Unknown error';
-              window.alert(`Export failed: ${message}`);
-            }
-          }}
-        >
+        <Button onPress={handlers.saveProject}>Save</Button>
+        <Button variant="success" onPress={handlers.exportGlb}>
           Export GLB
         </Button>
         <Button onPress={onBackToLanding}>Back to Landing</Button>

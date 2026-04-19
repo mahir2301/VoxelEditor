@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import type { SerializedProject } from '../features/editor/state/types';
 import { importProject } from '../utils/exportGLB';
@@ -6,6 +7,8 @@ import SelectField from './ui/SelectField';
 import styles from './LandingScreen.module.css';
 
 const RESOLUTIONS = [16, 32, 48, 64];
+const RESOLUTION_OPTIONS = RESOLUTIONS.map((value) => ({ label: `${value}x${value}`, value }));
+const ACCEPTED_PROJECT_TYPES = ['.voxproj', '.json'];
 
 interface Props {
   resolution: number;
@@ -24,19 +27,24 @@ export default function LandingScreen({
   onLoadProject,
   onLoadAutosave
 }: Props) {
-  const handleImport = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) {
-      return;
-    }
-    try {
-      const project = await importProject(file);
-      onLoadProject(project);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      window.alert(`Import failed: ${message}`);
-    }
-  };
+  const handlers = useMemo(
+    () => ({
+      onImport: async (files: FileList | null) => {
+        const file = files?.[0];
+        if (!file) {
+          return;
+        }
+        try {
+          const project = await importProject(file);
+          onLoadProject(project);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          window.alert(`Import failed: ${message}`);
+        }
+      }
+    }),
+    [onLoadProject]
+  );
 
   return (
     <main className={styles.root}>
@@ -52,7 +60,7 @@ export default function LandingScreen({
             <SelectField
               label="Resolution"
               value={resolution}
-              options={RESOLUTIONS.map((value) => ({ label: `${value}x${value}`, value }))}
+              options={RESOLUTION_OPTIONS}
               onChange={onResolutionChange}
             />
             <Button variant="accent" onPress={onCreateProject}>
@@ -64,7 +72,7 @@ export default function LandingScreen({
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Open Project</h2>
           <div className={styles.row}>
-            <FileTrigger acceptedFileTypes={['.voxproj', '.json']} onSelect={handleImport}>
+            <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handlers.onImport}>
               <Button>Load Project</Button>
             </FileTrigger>
             <Button isDisabled={!hasAutosave} onPress={onLoadAutosave}>

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Button,
   Label,
@@ -22,16 +23,23 @@ interface Props {
 }
 
 export default function SelectField({ label, options, value, onChange }: Props) {
-  return (
-    <Select
-      className={styles.select}
-      selectedKey={String(value)}
-      onSelectionChange={(key) => {
+  const handlers = useMemo(
+    () => ({
+      onSelectionChange: (key: string | number | null) => {
         if (key == null) {
           return;
         }
         onChange(Number(key));
-      }}
+      }
+    }),
+    [onChange]
+  );
+
+  return (
+    <Select
+      className={styles.select}
+      selectedKey={String(value)}
+      onSelectionChange={handlers.onSelectionChange}
     >
       <Label className={styles.label}>{label}</Label>
       <Button className={styles.trigger}>

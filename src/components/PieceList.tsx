@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 import { Input, TextField } from 'react-aria-components';
 import type { Piece } from '../features/editor/state/types';
 import { cn } from '../lib/cn';
@@ -18,6 +18,20 @@ interface Props {
   onSelectPiece: (pieceId: string) => void;
   onRenamePiece: (pieceId: string, name: string) => void;
   onDeletePiece: (pieceId: string) => void;
+}
+
+interface PieceRowProps {
+  piece: Piece;
+  resolution: number;
+  isEditingPiece: boolean;
+  isRenaming: boolean;
+  renameValue: string;
+  onSelectPiece: (pieceId: string) => void;
+  onDeletePiece: (pieceId: string) => void;
+  onStartRename: (pieceId: string, name: string) => void;
+  onRenameValueChange: (value: string) => void;
+  onCommitRename: () => void;
+  onCancelRename: () => void;
 }
 
 function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
@@ -95,6 +109,99 @@ function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
   return <canvas className={styles.thumb} ref={canvasRef} />;
 }
 
+function PieceRow({
+  piece,
+  resolution,
+  isEditingPiece,
+  isRenaming,
+  renameValue,
+  onSelectPiece,
+  onDeletePiece,
+  onStartRename,
+  onRenameValueChange,
+  onCommitRename,
+  onCancelRename
+}: PieceRowProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isRenaming]);
+
+  const handlers = useMemo(
+    () => ({
+      onDeletePress: () => {
+        onDeletePiece(piece.id);
+      },
+      onEditPress: () => {
+        onSelectPiece(piece.id);
+      },
+      onRenameInputBlur: () => {
+        onCommitRename();
+      },
+      onRenameInputChange: (event: ChangeEvent<HTMLInputElement>) => {
+        onRenameValueChange(event.target.value);
+      },
+      onRenameInputKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+          onCommitRename();
+          return;
+        }
+        if (event.key === 'Escape') {
+          onCancelRename();
+        }
+      },
+      onRenamePress: () => {
+        onStartRename(piece.id, piece.name);
+      }
+    }),
+    [
+      onCancelRename,
+      onCommitRename,
+      onDeletePiece,
+      onRenameValueChange,
+      onSelectPiece,
+      onStartRename,
+      piece.id,
+      piece.name
+    ]
+  );
+
+  return (
+    <article className={cn(styles.item, isEditingPiece && styles.itemEditing)}>
+      <div className={styles.main}>
+        <Button onPress={handlers.onEditPress}>Edit</Button>
+        <PieceThumbnail voxels={piece.voxels} resolution={resolution} />
+
+        {isRenaming ? (
+          <TextField className={styles.nameField}>
+            <Input
+              ref={inputRef}
+              className={styles.nameInput}
+              value={renameValue}
+              onChange={handlers.onRenameInputChange}
+              onBlur={handlers.onRenameInputBlur}
+              onKeyDown={handlers.onRenameInputKeyDown}
+            />
+          </TextField>
+        ) : (
+          <span className={styles.name}>{piece.name}</span>
+        )}
+      </div>
+
+      <div className={styles.actions}>
+        <Button onPress={handlers.onRenamePress}>Rename</Button>
+        <Button variant="danger" onPress={handlers.onDeletePress}>
+          Delete
+        </Button>
+      </div>
+    </article>
+  );
+}
+
 export default function PieceList({
   pieces,
   resolution,
@@ -105,22 +212,28 @@ export default function PieceList({
 }: Props) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (renamingId && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [renamingId]);
-
-  const commitRename = () => {
+  const commitRename = useCallback(() => {
     if (renamingId && renameValue.trim()) {
       onRenamePiece(renamingId, renameValue.trim());
     }
     setRenamingId(null);
     setRenameValue('');
-  };
+  }, [onRenamePiece, renameValue, renamingId]);
+
+  const handleStartRename = useCallback((pieceId: string, name: string) => {
+    setRenamingId(pieceId);
+    setRenameValue(name);
+  }, []);
+
+  const handleCancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameValue('');
+  }, []);
+
+  const handleRenameValueChange = useCallback((value: string) => {
+    setRenameValue(value);
+  }, []);
 
   return (
     <section className={styles.root}>
@@ -132,52 +245,20 @@ export default function PieceList({
         {pieces.length === 0 && <div className={styles.empty}>No pieces yet.</div>}
 
         {pieces.map((piece) => (
-          <article
+          <PieceRow
             key={piece.id}
-            className={cn(styles.item, editingPieceId === piece.id && styles.itemEditing)}
-          >
-            <div className={styles.main}>
-              <Button onPress={() => onSelectPiece(piece.id)}>Edit</Button>
-              <PieceThumbnail voxels={piece.voxels} resolution={resolution} />
-
-              {renamingId === piece.id ? (
-                <TextField className={styles.nameField}>
-                  <Input
-                    ref={inputRef}
-                    className={styles.nameInput}
-                    value={renameValue}
-                    onChange={(event) => setRenameValue(event.target.value)}
-                    onBlur={commitRename}
-                    onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                      if (event.key === 'Enter') {
-                        commitRename();
-                      }
-                      if (event.key === 'Escape') {
-                        setRenamingId(null);
-                        setRenameValue('');
-                      }
-                    }}
-                  />
-                </TextField>
-              ) : (
-                <span className={styles.name}>{piece.name}</span>
-              )}
-            </div>
-
-            <div className={styles.actions}>
-              <Button
-                onPress={() => {
-                  setRenamingId(piece.id);
-                  setRenameValue(piece.name);
-                }}
-              >
-                Rename
-              </Button>
-              <Button variant="danger" onPress={() => onDeletePiece(piece.id)}>
-                Delete
-              </Button>
-            </div>
-          </article>
+            piece={piece}
+            resolution={resolution}
+            isEditingPiece={editingPieceId === piece.id}
+            isRenaming={renamingId === piece.id}
+            renameValue={renameValue}
+            onSelectPiece={onSelectPiece}
+            onDeletePiece={onDeletePiece}
+            onStartRename={handleStartRename}
+            onRenameValueChange={handleRenameValueChange}
+            onCommitRename={commitRename}
+            onCancelRename={handleCancelRename}
+          />
         ))}
       </div>
     </section>
