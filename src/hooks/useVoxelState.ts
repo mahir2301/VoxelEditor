@@ -9,6 +9,7 @@ function reviveStoredState(saved: SerializedProject | null): EditorState {
   if (!saved || !saved.resolution) return getInitialState(DEFAULT_RESOLUTION);
   const resolution = saved.resolution;
   const safe = getInitialState(resolution);
+  const cameraMode = saved.cameraMode || safe.cameraMode;
   return {
     ...safe,
     ...saved,
@@ -25,6 +26,8 @@ function reviveStoredState(saved: SerializedProject | null): EditorState {
     history: [],
     historyIndex: -1,
     editingPieceId: null,
+    cameraMode,
+    cameraView: cameraMode === 'isometric' ? 'isometric' : 'perspective',
     pieceCount: saved.pieces?.length || 0,
   };
 }

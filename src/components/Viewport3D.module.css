@@ -33,3 +33,17 @@
   width: 100% !important;
   height: 100% !important;
 }
+
+.orientationOverlay {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 108px;
+  height: 108px;
+  border: 1px solid rgba(132, 157, 182, 0.4);
+  border-radius: 0.55rem;
+  background: rgba(8, 14, 24, 0.55);
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 2;
+}
