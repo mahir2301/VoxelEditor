@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react';
-import type { MutableRefObject } from 'react';
+import { OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { useEffect, useMemo, useRef } from 'react';
+import type { MutableRefObject } from 'react';
 import * as THREE from 'three';
-import { buildVoxelGeometry, getVoxelIndexFromHit } from '../utils/voxelUtils';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { CameraMode, CameraView } from '../features/editor/state/types';
+import { buildVoxelGeometry, getVoxelIndexFromHit } from '../utils/voxelUtils';
 import styles from './Viewport3D.module.css';
 
 interface VoxelMeshProps {
@@ -46,7 +46,11 @@ interface Props {
 
 const DEFAULT_PERSPECTIVE_DIRECTION: [number, number, number] = [1, 0.85, 1];
 
-function CameraOrientationSync({ orientationRef }: { orientationRef: MutableRefObject<THREE.Quaternion> }) {
+function CameraOrientationSync({
+  orientationRef
+}: {
+  orientationRef: MutableRefObject<THREE.Quaternion>;
+}) {
   const { camera } = useThree();
 
   useFrame(() => {
@@ -60,30 +64,41 @@ function pickViewFromNormal(normal: THREE.Vector3): CameraView {
   const ax = Math.abs(normal.x);
   const ay = Math.abs(normal.y);
   const az = Math.abs(normal.z);
-  if (ax >= ay && ax >= az) return normal.x >= 0 ? 'right' : 'left';
-  if (ay >= ax && ay >= az) return normal.y >= 0 ? 'top' : 'bottom';
+  if (ax >= ay && ax >= az) {
+    return normal.x >= 0 ? 'right' : 'left';
+  }
+  if (ay >= ax && ay >= az) {
+    return normal.y >= 0 ? 'top' : 'bottom';
+  }
   return normal.z >= 0 ? 'front' : 'back';
 }
 
 function OrientationWidget({
   orientationRef,
-  onSelectView,
+  onSelectView
 }: {
   orientationRef: MutableRefObject<THREE.Quaternion>;
   onSelectView?: (view: CameraView) => void;
 }) {
   const rootRef = useRef<THREE.Group | null>(null);
-  const edgeGeometry = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(0.88, 0.88, 0.88)), []);
+  const edgeGeometry = useMemo(
+    () => new THREE.EdgesGeometry(new THREE.BoxGeometry(0.88, 0.88, 0.88)),
+    []
+  );
 
   useFrame(() => {
-    if (!rootRef.current) return;
+    if (!rootRef.current) {
+      return;
+    }
     rootRef.current.quaternion.copy(orientationRef.current);
   });
 
   const onCubeClick = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     const normal = event.face?.normal;
-    if (!normal) return;
+    if (!normal) {
+      return;
+    }
     onSelectView?.(pickViewFromNormal(normal));
   };
 
@@ -93,7 +108,13 @@ function OrientationWidget({
     <group ref={rootRef}>
       <mesh onPointerDown={onCubeClick}>
         <boxGeometry args={[0.88, 0.88, 0.88]} />
-        <meshStandardMaterial color="#1a314a" transparent opacity={0.82} roughness={0.35} metalness={0.2} />
+        <meshStandardMaterial
+          color="#1a314a"
+          transparent
+          opacity={0.82}
+          roughness={0.35}
+          metalness={0.2}
+        />
       </mesh>
       <lineSegments>
         <primitive object={edgeGeometry} attach="geometry" />
@@ -136,13 +157,23 @@ function OrientationWidget({
   );
 }
 
-function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1, solidColor, onPointerDown }: VoxelMeshProps) {
+function VoxelMesh({
+  voxels,
+  colors,
+  palette,
+  resolution,
+  opacity = 1,
+  solidColor,
+  onPointerDown
+}: VoxelMeshProps) {
   const geometry = useMemo(() => {
-    const colorBuffer = solidColor ? null : (colors || voxels);
+    const colorBuffer = solidColor ? null : colors || voxels;
     return buildVoxelGeometry(voxels, colorBuffer, palette, resolution);
   }, [colors, palette, resolution, solidColor, voxels]);
 
-  if (!geometry.attributes.position?.count) return null;
+  if (!geometry.attributes.position?.count) {
+    return null;
+  }
 
   return (
     <mesh geometry={geometry} onPointerDown={onPointerDown}>
@@ -159,19 +190,25 @@ function VoxelMesh({ voxels, colors, palette, resolution, opacity = 1, solidColo
   );
 }
 
-function VoxelOutline({ voxels, resolution, color = '#9de6d6' }: {
+function VoxelOutline({
+  voxels,
+  resolution,
+  color = '#9de6d6'
+}: {
   voxels: Uint8Array;
   resolution: number;
   color?: string;
 }) {
   const geometry = useMemo(
     () => buildVoxelGeometry(voxels, null, ['#000000', '#ffffff'], resolution),
-    [voxels, resolution],
+    [voxels, resolution]
   );
 
   const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
 
-  if (!geometry.attributes.position?.count) return null;
+  if (!geometry.attributes.position?.count) {
+    return null;
+  }
 
   return (
     <lineSegments geometry={edges}>
@@ -180,29 +217,35 @@ function VoxelOutline({ voxels, resolution, color = '#9de6d6' }: {
   );
 }
 
-function CameraController({ cameraView, resolution, controlsRef }: {
+function CameraController({
+  cameraView,
+  resolution,
+  controlsRef
+}: {
   cameraView: CameraView;
   resolution: number;
   controlsRef: MutableRefObject<OrbitControlsImpl | null>;
 }) {
   useEffect(() => {
-    if (!controlsRef.current) return;
+    if (!controlsRef.current) {
+      return;
+    }
     const camera = controlsRef.current.object;
     const distance = resolution * 2.5;
     const epsilon = distance * 0.001;
     const position = {
-      front: [0, 0, distance],
       back: [0, 0, -distance],
-      right: [distance, 0, 0],
-      left: [-distance, 0, 0],
-      top: [0, distance, epsilon],
       bottom: [0, -distance, epsilon],
+      front: [0, 0, distance],
       isometric: [distance, distance, distance],
+      left: [-distance, 0, 0],
       perspective: [
         distance * DEFAULT_PERSPECTIVE_DIRECTION[0],
         distance * DEFAULT_PERSPECTIVE_DIRECTION[1],
-        distance * DEFAULT_PERSPECTIVE_DIRECTION[2],
+        distance * DEFAULT_PERSPECTIVE_DIRECTION[2]
       ],
+      right: [distance, 0, 0],
+      top: [0, distance, epsilon]
     };
 
     const [x, y, z] = position[cameraView] || position.perspective;
@@ -225,9 +268,12 @@ function SceneContent({
   pieceVoxels,
   palette,
   resolution,
-  onVoxelClick,
+  onVoxelClick
 }: SceneContentProps) {
-  const bounds = useMemo(() => new THREE.BoxGeometry(resolution, resolution, resolution), [resolution]);
+  const bounds = useMemo(
+    () => new THREE.BoxGeometry(resolution, resolution, resolution),
+    [resolution]
+  );
 
   return (
     <>
@@ -240,7 +286,10 @@ function SceneContent({
         <lineBasicMaterial color="#35506c" transparent opacity={0.55} />
       </lineSegments>
 
-      <gridHelper args={[resolution, resolution, '#56728f', '#2a4058']} position={[0, -resolution / 2, 0]} />
+      <gridHelper
+        args={[resolution, resolution, '#56728f', '#2a4058']}
+        position={[0, -resolution / 2, 0]}
+      />
 
       {mode === 'model' && modelVoxels && (
         <VoxelMesh
@@ -289,7 +338,7 @@ export default function Viewport3D({
   cameraMode,
   cameraView,
   onVoxelClick,
-  onCameraViewChange,
+  onCameraViewChange
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const orientationRef = useRef(new THREE.Quaternion());
@@ -298,18 +347,24 @@ export default function Viewport3D({
     () => [
       distance * DEFAULT_PERSPECTIVE_DIRECTION[0],
       distance * DEFAULT_PERSPECTIVE_DIRECTION[1],
-      distance * DEFAULT_PERSPECTIVE_DIRECTION[2],
+      distance * DEFAULT_PERSPECTIVE_DIRECTION[2]
     ],
-    [distance],
+    [distance]
   );
 
   const handleVoxelPointerDown = useMemo(() => {
-    if (!onVoxelClick || mode !== 'model' || !modelVoxels) return undefined;
+    if (!onVoxelClick || mode !== 'model' || !modelVoxels) {
+      return undefined;
+    }
     return (event: ThreeEvent<PointerEvent>) => {
       event.stopPropagation();
-      if (event.faceIndex == null) return;
+      if (event.faceIndex == null) {
+        return;
+      }
       const voxelIndex = getVoxelIndexFromHit(event.faceIndex, modelVoxels, resolution);
-      if (voxelIndex >= 0) onVoxelClick(voxelIndex);
+      if (voxelIndex >= 0) {
+        onVoxelClick(voxelIndex);
+      }
     };
   }, [mode, modelVoxels, onVoxelClick, resolution]);
 
@@ -329,9 +384,19 @@ export default function Viewport3D({
               zoom={Math.max(1.2, 72 / resolution)}
             />
           ) : (
-            <PerspectiveCamera makeDefault fov={45} near={0.5} far={3000} position={initialPosition} />
+            <PerspectiveCamera
+              makeDefault
+              fov={45}
+              near={0.5}
+              far={3000}
+              position={initialPosition}
+            />
           )}
-          <CameraController cameraView={cameraView} resolution={resolution} controlsRef={controlsRef} />
+          <CameraController
+            cameraView={cameraView}
+            resolution={resolution}
+            controlsRef={controlsRef}
+          />
           <CameraOrientationSync orientationRef={orientationRef} />
 
           <SceneContent
@@ -345,13 +410,24 @@ export default function Viewport3D({
             onVoxelClick={handleVoxelPointerDown}
           />
 
-          <OrbitControls ref={controlsRef} target={[0, 0, 0]} minDistance={2} maxDistance={distance * 5} />
+          <OrbitControls
+            ref={controlsRef}
+            target={[0, 0, 0]}
+            minDistance={2}
+            maxDistance={distance * 5}
+          />
         </Canvas>
 
         <div className={styles.orientationOverlay}>
           <Canvas gl={{ alpha: true, antialias: true }}>
             {cameraMode === 'isometric' ? (
-              <OrthographicCamera makeDefault near={0.1} far={100} position={[0, 0, 5.2]} zoom={26} />
+              <OrthographicCamera
+                makeDefault
+                near={0.1}
+                far={100}
+                position={[0, 0, 5.2]}
+                zoom={26}
+              />
             ) : (
               <PerspectiveCamera makeDefault near={0.1} far={100} position={[0, 0, 5.2]} fov={30} />
             )}

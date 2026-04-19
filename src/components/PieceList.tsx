@@ -25,13 +25,17 @@ function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const size = 40;
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
     ctx.fillStyle = '#0f1a28';
     ctx.fillRect(0, 0, size, size);
 
@@ -41,7 +45,9 @@ function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
     let maxY = -1;
 
     for (let i = 0; i < voxels.length; i += 1) {
-      if (!voxels[i]) continue;
+      if (!voxels[i]) {
+        continue;
+      }
       const x = i % resolution;
       const y = Math.floor(i / resolution) % resolution;
       minX = Math.min(minX, x);
@@ -50,7 +56,9 @@ function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
       maxY = Math.max(maxY, y);
     }
 
-    if (maxX < minX || maxY < minY) return;
+    if (maxX < minX || maxY < minY) {
+      return;
+    }
 
     const width = maxX - minX + 1;
     const height = maxY - minY + 1;
@@ -63,18 +71,22 @@ function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
         let occupied = false;
         for (let z = 0; z < resolution; z += 1) {
           const index = x + y * resolution + z * resolution * resolution;
-          if (!voxels[index]) continue;
+          if (!voxels[index]) {
+            continue;
+          }
           occupied = true;
           break;
         }
-        if (!occupied) continue;
+        if (!occupied) {
+          continue;
+        }
 
         ctx.fillStyle = '#5ca0d8';
         ctx.fillRect(
           offsetX + (x - minX) * scale,
           offsetY + (y - minY) * scale,
           Math.ceil(scale),
-          Math.ceil(scale),
+          Math.ceil(scale)
         );
       }
     }
@@ -89,7 +101,7 @@ export default function PieceList({
   editingPieceId,
   onSelectPiece,
   onRenamePiece,
-  onDeletePiece,
+  onDeletePiece
 }: Props) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -125,9 +137,7 @@ export default function PieceList({
             className={cn(styles.item, editingPieceId === piece.id && styles.itemEditing)}
           >
             <div className={styles.main}>
-              <Button onPress={() => onSelectPiece(piece.id)}>
-                Edit
-              </Button>
+              <Button onPress={() => onSelectPiece(piece.id)}>Edit</Button>
               <PieceThumbnail voxels={piece.voxels} resolution={resolution} />
 
               {renamingId === piece.id ? (
@@ -139,7 +149,9 @@ export default function PieceList({
                     onChange={(event) => setRenameValue(event.target.value)}
                     onBlur={commitRename}
                     onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                      if (event.key === 'Enter') commitRename();
+                      if (event.key === 'Enter') {
+                        commitRename();
+                      }
                       if (event.key === 'Escape') {
                         setRenamingId(null);
                         setRenameValue('');
@@ -161,7 +173,9 @@ export default function PieceList({
               >
                 Rename
               </Button>
-              <Button variant="danger" onPress={() => onDeletePiece(piece.id)}>Delete</Button>
+              <Button variant="danger" onPress={() => onDeletePiece(piece.id)}>
+                Delete
+              </Button>
             </div>
           </article>
         ))}

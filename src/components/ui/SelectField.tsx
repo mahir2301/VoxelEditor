@@ -5,7 +5,7 @@ import {
   ListBoxItem,
   Popover,
   Select,
-  SelectValue,
+  SelectValue
 } from 'react-aria-components';
 import styles from './SelectField.module.css';
 
@@ -27,7 +27,9 @@ export default function SelectField({ label, options, value, onChange }: Props) 
       className={styles.select}
       selectedKey={String(value)}
       onSelectionChange={(key) => {
-        if (key == null) return;
+        if (key == null) {
+          return;
+        }
         onChange(Number(key));
       }}
     >
@@ -39,7 +41,12 @@ export default function SelectField({ label, options, value, onChange }: Props) 
       <Popover className={styles.popover}>
         <ListBox className={styles.list}>
           {options.map((option) => (
-            <ListBoxItem key={String(option.value)} id={String(option.value)} textValue={option.label} className={styles.option}>
+            <ListBoxItem
+              key={String(option.value)}
+              id={String(option.value)}
+              textValue={option.label}
+              className={styles.option}
+            >
               {option.label}
             </ListBoxItem>
           ))}

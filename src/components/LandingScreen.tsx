@@ -1,6 +1,6 @@
 import { FileTrigger } from 'react-aria-components';
-import { importProject } from '../utils/exportGLB';
 import type { SerializedProject } from '../features/editor/state/types';
+import { importProject } from '../utils/exportGLB';
 import Button from './ui/Button';
 import SelectField from './ui/SelectField';
 import styles from './LandingScreen.module.css';
@@ -22,11 +22,13 @@ export default function LandingScreen({
   onResolutionChange,
   onCreateProject,
   onLoadProject,
-  onLoadAutosave,
+  onLoadAutosave
 }: Props) {
   const handleImport = async (files: FileList | null) => {
     const file = files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     try {
       const project = await importProject(file);
       onLoadProject(project);
@@ -40,7 +42,9 @@ export default function LandingScreen({
     <main className={styles.root}>
       <section className={styles.card}>
         <h1 className={styles.title}>Voxel Editor</h1>
-        <p className={styles.subtitle}>Start a new project, open a saved file, or continue from autosave.</p>
+        <p className={styles.subtitle}>
+          Start a new project, open a saved file, or continue from autosave.
+        </p>
 
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>New Project</h2>
@@ -48,10 +52,12 @@ export default function LandingScreen({
             <SelectField
               label="Resolution"
               value={resolution}
-              options={RESOLUTIONS.map((value) => ({ value, label: `${value}x${value}` }))}
+              options={RESOLUTIONS.map((value) => ({ label: `${value}x${value}`, value }))}
               onChange={onResolutionChange}
             />
-            <Button variant="accent" onPress={onCreateProject}>Create Project</Button>
+            <Button variant="accent" onPress={onCreateProject}>
+              Create Project
+            </Button>
           </div>
         </div>
 
@@ -61,7 +67,9 @@ export default function LandingScreen({
             <FileTrigger acceptedFileTypes={['.voxproj', '.json']} onSelect={handleImport}>
               <Button>Load Project</Button>
             </FileTrigger>
-            <Button isDisabled={!hasAutosave} onPress={onLoadAutosave}>Load Autosave</Button>
+            <Button isDisabled={!hasAutosave} onPress={onLoadAutosave}>
+              Load Autosave
+            </Button>
           </div>
         </div>
       </section>

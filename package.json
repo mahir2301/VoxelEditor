@@ -1,34 +1,30 @@
 {
-  "name": "voxel-temp",
-  "private": true,
+  "name": "voxel-editor",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "lint": "oxlint --fix",
+    "format": "oxfmt"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.6.0",
-    "react": "^19.2.4",
-    "react-aria-components": "^1.17.0",
-    "react-dom": "^19.2.4",
-    "three": "^0.184.0"
+    "@react-three/drei": "10.7.7",
+    "@react-three/fiber": "9.6.0",
+    "react": "19.2.5",
+    "react-aria-components": "1.17.0",
+    "react-dom": "19.2.5",
+    "three": "0.184.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.4.0",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.4"
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.1",
+    "oxfmt": "0.45.0",
+    "oxlint": "1.60.0",
+    "oxlint-tsgolint": "0.21.1",
+    "typescript": "6.0.3",
+    "vite": "8.0.8"
   }
 }

@@ -12,8 +12,8 @@ import {
   Input,
   Label,
   Popover,
-  parseColor,
   SliderTrack,
+  parseColor
 } from 'react-aria-components';
 import SelectField from './ui/SelectField';
 import styles from './ColorPalette.module.css';
@@ -25,12 +25,17 @@ interface Props {
   onColorChange: (index: number, color: string) => void;
 }
 
-export default function ColorPalette({ palette, selectedColor, onColorSelect, onColorChange }: Props) {
+export default function ColorPalette({
+  palette,
+  selectedColor,
+  onColorSelect,
+  onColorChange
+}: Props) {
   const selectedHex = palette[selectedColor] || '#808080';
 
   const options = useMemo(
-    () => palette.map((color, index) => ({ value: index, label: `Slot ${index + 1} - ${color}` })),
-    [palette],
+    () => palette.map((color, index) => ({ label: `Slot ${index + 1} - ${color}`, value: index })),
+    [palette]
   );
 
   return (
@@ -54,7 +59,12 @@ export default function ColorPalette({ palette, selectedColor, onColorSelect, on
           </Button>
           <Popover className={styles.popover} placement="top start" offset={8}>
             <Dialog className={styles.dialog}>
-              <ColorArea className={styles.colorArea} colorSpace="hsb" xChannel="saturation" yChannel="brightness">
+              <ColorArea
+                className={styles.colorArea}
+                colorSpace="hsb"
+                xChannel="saturation"
+                yChannel="brightness"
+              >
                 <ColorThumb className={styles.thumb} />
               </ColorArea>
 

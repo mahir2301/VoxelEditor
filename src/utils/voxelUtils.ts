@@ -1,20 +1,67 @@
 import * as THREE from 'three';
-import {
-  computeModelFromPieces,
-  computePieceVoxels,
-  DEFAULT_PALETTE,
-} from '../domain/voxel/model';
+import { DEFAULT_PALETTE, computeModelFromPieces, computePieceVoxels } from '../domain/voxel/model';
 import type { Piece } from '../features/editor/state/types';
 
 type VoxelTuple = [number, number, number];
 
-const FACE_DATA: Array<{ dir: VoxelTuple; verts: [VoxelTuple, VoxelTuple, VoxelTuple, VoxelTuple] }> = [
-  { dir: [0, 1, 0], verts: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]] },
-  { dir: [0, -1, 0], verts: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
-  { dir: [1, 0, 0], verts: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]] },
-  { dir: [-1, 0, 0], verts: [[0, 1, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]] },
-  { dir: [0, 0, 1], verts: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]] },
-  { dir: [0, 0, -1], verts: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]] },
+const FACE_DATA: {
+  dir: VoxelTuple;
+  verts: [VoxelTuple, VoxelTuple, VoxelTuple, VoxelTuple];
+}[] = [
+  {
+    dir: [0, 1, 0],
+    verts: [
+      [0, 1, 0],
+      [0, 1, 1],
+      [1, 1, 1],
+      [1, 1, 0]
+    ]
+  },
+  {
+    dir: [0, -1, 0],
+    verts: [
+      [0, 0, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+      [0, 0, 1]
+    ]
+  },
+  {
+    dir: [1, 0, 0],
+    verts: [
+      [1, 0, 1],
+      [1, 0, 0],
+      [1, 1, 0],
+      [1, 1, 1]
+    ]
+  },
+  {
+    dir: [-1, 0, 0],
+    verts: [
+      [0, 1, 0],
+      [0, 0, 0],
+      [0, 0, 1],
+      [0, 1, 1]
+    ]
+  },
+  {
+    dir: [0, 0, 1],
+    verts: [
+      [0, 0, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 1, 1]
+    ]
+  },
+  {
+    dir: [0, 0, -1],
+    verts: [
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 1, 0],
+      [1, 0, 0]
+    ]
+  }
 ];
 
 function getVoxelCoord(index: number, resolution: number): VoxelTuple {
@@ -28,7 +75,13 @@ function getVoxelOffset(x: number, y: number, z: number, resolution: number): Vo
   return [x - resolution / 2, y - resolution / 2, z - resolution / 2];
 }
 
-function hasNeighbor(voxels: Uint8Array, x: number, y: number, z: number, resolution: number): boolean {
+function hasNeighbor(
+  voxels: Uint8Array,
+  x: number,
+  y: number,
+  z: number,
+  resolution: number
+): boolean {
   if (x < 0 || x >= resolution || y < 0 || y >= resolution || z < 0 || z >= resolution) {
     return false;
   }
@@ -39,7 +92,7 @@ export function buildVoxelGeometry(
   voxels: Uint8Array,
   colors: Uint8Array | null | undefined,
   palette: string[],
-  resolution: number,
+  resolution: number
 ): THREE.BufferGeometry {
   const positions = [];
   const colorAttr = [];
@@ -47,7 +100,9 @@ export function buildVoxelGeometry(
   let vertexCount = 0;
 
   for (let i = 0; i < voxels.length; i += 1) {
-    if (!voxels[i]) continue;
+    if (!voxels[i]) {
+      continue;
+    }
 
     const [x, y, z] = getVoxelCoord(i, resolution);
     const [ox, oy, oz] = getVoxelOffset(x, y, z, resolution);
@@ -58,7 +113,9 @@ export function buildVoxelGeometry(
       const nx = x + face.dir[0];
       const ny = y + face.dir[1];
       const nz = z + face.dir[2];
-      if (hasNeighbor(voxels, nx, ny, nz, resolution)) continue;
+      if (hasNeighbor(voxels, nx, ny, nz, resolution)) {
+        continue;
+      }
 
       for (const [vx, vy, vz] of face.verts) {
         positions.push(ox + vx, oy + vy, oz + vz);
@@ -71,7 +128,7 @@ export function buildVoxelGeometry(
         vertexCount + 2,
         vertexCount,
         vertexCount + 2,
-        vertexCount + 3,
+        vertexCount + 3
       );
       vertexCount += 4;
     }
@@ -85,10 +142,16 @@ export function buildVoxelGeometry(
   return geometry;
 }
 
-export function getVoxelIndexFromHit(faceIndex: number, voxels: Uint8Array, resolution: number): number {
+export function getVoxelIndexFromHit(
+  faceIndex: number,
+  voxels: Uint8Array,
+  resolution: number
+): number {
   let triangleCursor = 0;
   for (let i = 0; i < voxels.length; i += 1) {
-    if (!voxels[i]) continue;
+    if (!voxels[i]) {
+      continue;
+    }
 
     const [x, y, z] = getVoxelCoord(i, resolution);
     let visibleFaces = 0;
@@ -98,7 +161,9 @@ export function getVoxelIndexFromHit(faceIndex: number, voxels: Uint8Array, reso
       }
     }
     const voxelTriangles = visibleFaces * 2;
-    if (faceIndex >= triangleCursor && faceIndex < triangleCursor + voxelTriangles) return i;
+    if (faceIndex >= triangleCursor && faceIndex < triangleCursor + voxelTriangles) {
+      return i;
+    }
     triangleCursor += voxelTriangles;
   }
   return -1;

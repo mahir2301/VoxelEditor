@@ -4,60 +4,61 @@ const MAX_HISTORY = 200;
 
 export function createSnapshot(state: EditorState): EditorSnapshot {
   return {
-    resolution: state.resolution,
+    cameraMode: state.cameraMode,
+    cameraView: state.cameraView,
+    editingPieceId: state.editingPieceId,
     frontGrid: new Uint8Array(state.frontGrid),
-    sideGrid: new Uint8Array(state.sideGrid),
-    topGrid: new Uint8Array(state.topGrid),
+    modelColors: new Uint8Array(state.modelColors),
+    modelVoxels: new Uint8Array(state.modelVoxels),
+    palette: [...state.palette],
+    pieceCount: state.pieceCount,
     pieceVoxels: new Uint8Array(state.pieceVoxels),
     pieces: state.pieces.map((piece) => ({
       ...piece,
-      voxels: new Uint8Array(piece.voxels),
+      voxels: new Uint8Array(piece.voxels)
     })),
-    editingPieceId: state.editingPieceId,
-    modelVoxels: new Uint8Array(state.modelVoxels),
-    modelColors: new Uint8Array(state.modelColors),
-    palette: [...state.palette],
+    resolution: state.resolution,
     selectedColor: state.selectedColor,
+    sideGrid: new Uint8Array(state.sideGrid),
     tool: state.tool,
-    cameraMode: state.cameraMode,
-    cameraView: state.cameraView,
-    pieceCount: state.pieceCount,
+    topGrid: new Uint8Array(state.topGrid)
   };
 }
 
 export function applySnapshot(state: EditorState, snapshot: EditorSnapshot): EditorState {
   return {
     ...state,
-    resolution: snapshot.resolution,
+    cameraMode: snapshot.cameraMode,
+    cameraView: snapshot.cameraView,
+    editingPieceId: snapshot.editingPieceId,
     frontGrid: new Uint8Array(snapshot.frontGrid),
-    sideGrid: new Uint8Array(snapshot.sideGrid),
-    topGrid: new Uint8Array(snapshot.topGrid),
+    modelColors: new Uint8Array(snapshot.modelColors),
+    modelVoxels: new Uint8Array(snapshot.modelVoxels),
+    palette: [...snapshot.palette],
+    pieceCount: snapshot.pieceCount,
     pieceVoxels: new Uint8Array(snapshot.pieceVoxels),
     pieces: snapshot.pieces.map((piece) => ({
       ...piece,
-      voxels: new Uint8Array(piece.voxels),
+      voxels: new Uint8Array(piece.voxels)
     })),
-    editingPieceId: snapshot.editingPieceId,
-    modelVoxels: new Uint8Array(snapshot.modelVoxels),
-    modelColors: new Uint8Array(snapshot.modelColors),
-    palette: [...snapshot.palette],
+    resolution: snapshot.resolution,
     selectedColor: snapshot.selectedColor,
+    sideGrid: new Uint8Array(snapshot.sideGrid),
     tool: snapshot.tool,
-    cameraMode: snapshot.cameraMode,
-    cameraView: snapshot.cameraView,
-    pieceCount: snapshot.pieceCount,
+    topGrid: new Uint8Array(snapshot.topGrid)
   };
 }
 
 export function recordHistory(prevState: EditorState, nextState: EditorState): EditorState {
-  const base = prevState.history.length === 0
-    ? [createSnapshot(prevState)]
-    : prevState.history.slice(0, prevState.historyIndex + 1);
+  const base =
+    prevState.history.length === 0
+      ? [createSnapshot(prevState)]
+      : prevState.history.slice(0, prevState.historyIndex + 1);
   const entries = [...base, createSnapshot(nextState)];
   const trimmed = entries.slice(Math.max(0, entries.length - MAX_HISTORY));
   return {
     ...nextState,
     history: trimmed,
-    historyIndex: trimmed.length - 1,
+    historyIndex: trimmed.length - 1
   };
 }

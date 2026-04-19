@@ -19,17 +19,23 @@ export default function ConfirmDialog({
   cancelLabel,
   confirmLabel,
   onCancel,
-  onConfirm,
+  onConfirm
 }: Props) {
   return (
-    <ModalOverlay isOpen={isOpen} onOpenChange={(open) => !open && onCancel?.()} className={styles.overlay}>
+    <ModalOverlay
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && onCancel?.()}
+      className={styles.overlay}
+    >
       <Modal className={styles.modal}>
         <Dialog>
           <h2 className={styles.title}>{title}</h2>
           <p className={styles.description}>{description}</p>
           <div className={styles.actions}>
             <Button onPress={onCancel}>{cancelLabel}</Button>
-            <Button variant="danger" onPress={onConfirm}>{confirmLabel}</Button>
+            <Button variant="danger" onPress={onConfirm}>
+              {confirmLabel}
+            </Button>
           </div>
         </Dialog>
       </Modal>
