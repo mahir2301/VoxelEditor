@@ -208,9 +208,9 @@ export default function App() {
             modelVoxels={effectiveModelVoxels}
             onSetCell={(index, value) => handleSetCell('side', index, value)}
             onViewClick={() => {
-              runAction({ type: 'SET_CAMERA_VIEW', view: 'left' });
-              setPieceCameraView('left');
-              setModelCameraView('left');
+              runAction({ type: 'SET_CAMERA_VIEW', view: 'right' });
+              setPieceCameraView('right');
+              setModelCameraView('right');
             }}
           />
           <Grid2D

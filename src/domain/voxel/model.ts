@@ -15,6 +15,26 @@ export function createEmptyVoxels(resolution: number): Uint8Array {
   return new Uint8Array(resolution * resolution * resolution);
 }
 
+function voxelIndexToXYZ(index: number, resolution: number): { x: number; y: number; z: number } {
+  return {
+    x: index % resolution,
+    y: Math.floor(index / resolution) % resolution,
+    z: Math.floor(index / (resolution * resolution)),
+  };
+}
+
+function frontIndexFromXY(x: number, y: number, resolution: number): number {
+  return x + (resolution - 1 - y) * resolution;
+}
+
+function sideIndexFromZY(z: number, y: number, resolution: number): number {
+  return (resolution - 1 - z) + (resolution - 1 - y) * resolution;
+}
+
+function topIndexFromXZ(x: number, z: number, resolution: number): number {
+  return x + z * resolution;
+}
+
 export function computePieceVoxels(
   frontGrid: Uint8Array,
   sideGrid: Uint8Array,
@@ -23,13 +43,11 @@ export function computePieceVoxels(
 ): Uint8Array {
   const voxels = createEmptyVoxels(resolution);
   for (let i = 0; i < voxels.length; i += 1) {
-    const x = i % resolution;
-    const y = Math.floor(i / resolution) % resolution;
-    const z = Math.floor(i / (resolution * resolution));
+    const { x, y, z } = voxelIndexToXYZ(i, resolution);
     if (
-      frontGrid[x + (resolution - 1 - y) * resolution]
-      && sideGrid[z + (resolution - 1 - y) * resolution]
-      && topGrid[x + z * resolution]
+      frontGrid[frontIndexFromXY(x, y, resolution)]
+      && sideGrid[sideIndexFromZY(z, y, resolution)]
+      && topGrid[topIndexFromXZ(x, z, resolution)]
     ) {
       voxels[i] = 1;
     }
@@ -48,12 +66,10 @@ export function reconstructGridsFromPiece(pieceVoxels: Uint8Array, resolution: n
 
   for (let i = 0; i < pieceVoxels.length; i += 1) {
     if (!pieceVoxels[i]) continue;
-    const x = i % resolution;
-    const y = Math.floor(i / resolution) % resolution;
-    const z = Math.floor(i / (resolution * resolution));
-    frontGrid[x + (resolution - 1 - y) * resolution] = 1;
-    sideGrid[z + (resolution - 1 - y) * resolution] = 1;
-    topGrid[x + z * resolution] = 1;
+    const { x, y, z } = voxelIndexToXYZ(i, resolution);
+    frontGrid[frontIndexFromXY(x, y, resolution)] = 1;
+    sideGrid[sideIndexFromZY(z, y, resolution)] = 1;
+    topGrid[topIndexFromXZ(x, z, resolution)] = 1;
   }
 
   return { frontGrid, sideGrid, topGrid };
