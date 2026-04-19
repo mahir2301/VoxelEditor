@@ -45,6 +45,21 @@ interface Props {
 }
 
 const DEFAULT_PERSPECTIVE_DIRECTION: [number, number, number] = [1, 0.85, 1];
+const MAIN_CANVAS_GL = { antialias: true };
+const ORIENTATION_CANVAS_GL = { alpha: true, antialias: true };
+const ORBIT_TARGET: [number, number, number] = [0, 0, 0];
+const MINI_CAMERA_POSITION: [number, number, number] = [0, 0, 5.2];
+const MINI_LIGHT_POSITION: [number, number, number] = [3, 4, 4];
+const SCENE_LIGHT_POSITION_PRIMARY: [number, number, number] = [11, 16, 10];
+const SCENE_LIGHT_POSITION_SECONDARY: [number, number, number] = [-8, 10, -8];
+const OUTLINE_PALETTE = ['#000', '#9de6d6'];
+const ORIENTATION_CUBE_ARGS: [number, number, number] = [0.88, 0.88, 0.88];
+const RIGHT_AXIS_ROTATION: [number, number, number] = [0, 0, -Math.PI / 2];
+const FRONT_AXIS_ROTATION: [number, number, number] = [Math.PI / 2, 0, 0];
+const ORIENTATION_ARROW_BODY_POSITION: [number, number, number] = [0, 0.58, 0];
+const ORIENTATION_ARROW_HEAD_POSITION: [number, number, number] = [0, 1.3, 0];
+const ORIENTATION_ARROW_BODY_ARGS: [number, number, number, number] = [0.055, 0.055, 1.16, 12];
+const ORIENTATION_ARROW_HEAD_ARGS: [number, number, number] = [0.16, 0.34, 14];
 
 function CameraOrientationSync({
   orientationRef
@@ -93,21 +108,33 @@ function OrientationWidget({
     rootRef.current.quaternion.copy(orientationRef.current);
   });
 
-  const onCubeClick = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation();
-    const normal = event.face?.normal;
-    if (!normal) {
-      return;
-    }
-    onSelectView?.(pickViewFromNormal(normal));
-  };
-
-  const makeArrow = (view: CameraView) => () => onSelectView?.(view);
+  const handlers = useMemo(
+    () => ({
+      onCubeClick: (event: ThreeEvent<PointerEvent>) => {
+        event.stopPropagation();
+        const normal = event.face?.normal;
+        if (!normal) {
+          return;
+        }
+        onSelectView?.(pickViewFromNormal(normal));
+      },
+      onSelectFront: () => {
+        onSelectView?.('front');
+      },
+      onSelectRight: () => {
+        onSelectView?.('right');
+      },
+      onSelectTop: () => {
+        onSelectView?.('top');
+      }
+    }),
+    [onSelectView]
+  );
 
   return (
     <group ref={rootRef}>
-      <mesh onPointerDown={onCubeClick}>
-        <boxGeometry args={[0.88, 0.88, 0.88]} />
+      <mesh onPointerDown={handlers.onCubeClick}>
+        <boxGeometry args={ORIENTATION_CUBE_ARGS} />
         <meshStandardMaterial
           color="#1a314a"
           transparent
@@ -121,35 +148,35 @@ function OrientationWidget({
         <lineBasicMaterial color="#b8d0e8" />
       </lineSegments>
 
-      <group rotation={[0, 0, -Math.PI / 2]}>
-        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('right')}>
-          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+      <group rotation={RIGHT_AXIS_ROTATION}>
+        <mesh position={ORIENTATION_ARROW_BODY_POSITION} onPointerDown={handlers.onSelectRight}>
+          <cylinderGeometry args={ORIENTATION_ARROW_BODY_ARGS} />
           <meshStandardMaterial color="#ff5d5d" />
         </mesh>
-        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('right')}>
-          <coneGeometry args={[0.16, 0.34, 14]} />
+        <mesh position={ORIENTATION_ARROW_HEAD_POSITION} onPointerDown={handlers.onSelectRight}>
+          <coneGeometry args={ORIENTATION_ARROW_HEAD_ARGS} />
           <meshStandardMaterial color="#ff5d5d" />
         </mesh>
       </group>
 
       <group>
-        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('top')}>
-          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+        <mesh position={ORIENTATION_ARROW_BODY_POSITION} onPointerDown={handlers.onSelectTop}>
+          <cylinderGeometry args={ORIENTATION_ARROW_BODY_ARGS} />
           <meshStandardMaterial color="#5de38a" />
         </mesh>
-        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('top')}>
-          <coneGeometry args={[0.16, 0.34, 14]} />
+        <mesh position={ORIENTATION_ARROW_HEAD_POSITION} onPointerDown={handlers.onSelectTop}>
+          <coneGeometry args={ORIENTATION_ARROW_HEAD_ARGS} />
           <meshStandardMaterial color="#5de38a" />
         </mesh>
       </group>
 
-      <group rotation={[Math.PI / 2, 0, 0]}>
-        <mesh position={[0, 0.58, 0]} onPointerDown={makeArrow('front')}>
-          <cylinderGeometry args={[0.055, 0.055, 1.16, 12]} />
+      <group rotation={FRONT_AXIS_ROTATION}>
+        <mesh position={ORIENTATION_ARROW_BODY_POSITION} onPointerDown={handlers.onSelectFront}>
+          <cylinderGeometry args={ORIENTATION_ARROW_BODY_ARGS} />
           <meshStandardMaterial color="#69a9ff" />
         </mesh>
-        <mesh position={[0, 1.3, 0]} onPointerDown={makeArrow('front')}>
-          <coneGeometry args={[0.16, 0.34, 14]} />
+        <mesh position={ORIENTATION_ARROW_HEAD_POSITION} onPointerDown={handlers.onSelectFront}>
+          <coneGeometry args={ORIENTATION_ARROW_HEAD_ARGS} />
           <meshStandardMaterial color="#69a9ff" />
         </mesh>
       </group>
@@ -274,22 +301,28 @@ function SceneContent({
     () => new THREE.BoxGeometry(resolution, resolution, resolution),
     [resolution]
   );
+  const boundsArgs = useMemo<[THREE.BoxGeometry]>(() => [bounds], [bounds]);
+  const gridArgs = useMemo<[number, number, string, string]>(
+    () => [resolution, resolution, '#56728f', '#2a4058'],
+    [resolution]
+  );
+  const gridPosition = useMemo<[number, number, number]>(
+    () => [0, -resolution / 2, 0],
+    [resolution]
+  );
 
   return (
     <>
       <ambientLight intensity={0.45} />
-      <directionalLight position={[11, 16, 10]} intensity={0.95} />
-      <directionalLight position={[-8, 10, -8]} intensity={0.45} />
+      <directionalLight position={SCENE_LIGHT_POSITION_PRIMARY} intensity={0.95} />
+      <directionalLight position={SCENE_LIGHT_POSITION_SECONDARY} intensity={0.45} />
 
       <lineSegments>
-        <edgesGeometry args={[bounds]} />
+        <edgesGeometry args={boundsArgs} />
         <lineBasicMaterial color="#35506c" transparent opacity={0.55} />
       </lineSegments>
 
-      <gridHelper
-        args={[resolution, resolution, '#56728f', '#2a4058']}
-        position={[0, -resolution / 2, 0]}
-      />
+      <gridHelper args={gridArgs} position={gridPosition} />
 
       {mode === 'model' && modelVoxels && (
         <VoxelMesh
@@ -305,7 +338,7 @@ function SceneContent({
         <>
           <VoxelMesh
             voxels={editingPieceVoxels}
-            palette={['#000', '#9de6d6']}
+            palette={OUTLINE_PALETTE}
             resolution={resolution}
             solidColor="#7ad6c6"
             opacity={0.35}
@@ -374,7 +407,7 @@ export default function Viewport3D({
         <span className={styles.label}>{mode === 'piece' ? 'Piece Preview' : 'Model Preview'}</span>
       </header>
       <div className={styles.canvasWrap}>
-        <Canvas gl={{ antialias: true }}>
+        <Canvas gl={MAIN_CANVAS_GL}>
           {cameraMode === 'isometric' ? (
             <OrthographicCamera
               makeDefault
@@ -412,27 +445,33 @@ export default function Viewport3D({
 
           <OrbitControls
             ref={controlsRef}
-            target={[0, 0, 0]}
+            target={ORBIT_TARGET}
             minDistance={2}
             maxDistance={distance * 5}
           />
         </Canvas>
 
         <div className={styles.orientationOverlay}>
-          <Canvas gl={{ alpha: true, antialias: true }}>
+          <Canvas gl={ORIENTATION_CANVAS_GL}>
             {cameraMode === 'isometric' ? (
               <OrthographicCamera
                 makeDefault
                 near={0.1}
                 far={100}
-                position={[0, 0, 5.2]}
+                position={MINI_CAMERA_POSITION}
                 zoom={26}
               />
             ) : (
-              <PerspectiveCamera makeDefault near={0.1} far={100} position={[0, 0, 5.2]} fov={30} />
+              <PerspectiveCamera
+                makeDefault
+                near={0.1}
+                far={100}
+                position={MINI_CAMERA_POSITION}
+                fov={30}
+              />
             )}
             <ambientLight intensity={0.85} />
-            <directionalLight position={[3, 4, 4]} intensity={0.7} />
+            <directionalLight position={MINI_LIGHT_POSITION} intensity={0.7} />
             <OrientationWidget orientationRef={orientationRef} onSelectView={onCameraViewChange} />
           </Canvas>
         </div>

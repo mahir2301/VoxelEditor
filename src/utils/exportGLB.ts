@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { parseSerializedProject } from '../features/editor/state/projectSchema';
 import type { EditorState, SerializedProject } from '../features/editor/state/types';
 
 /**
@@ -212,23 +213,11 @@ export async function importProject(file: File): Promise<SerializedProject> {
     reader.onload = (e) => {
       try {
         const text = typeof e.target?.result === 'string' ? e.target.result : '';
-        const data = JSON.parse(text) as Partial<SerializedProject>;
-        const parsed: SerializedProject = {
-          cameraMode: data.cameraMode,
-          cameraView: data.cameraView,
-          frontGrid: [...new Uint8Array(Object.values(data.frontGrid || []))],
-          modelColors: [...new Uint8Array(Object.values(data.modelColors || []))],
-          modelVoxels: [...new Uint8Array(Object.values(data.modelVoxels || []))],
-          palette: data.palette || [],
-          pieces: (data.pieces || []).map((p) => ({
-            ...p,
-            voxels: [...new Uint8Array(Object.values(p.voxels || []))]
-          })),
-          resolution: data.resolution || 16,
-          sideGrid: [...new Uint8Array(Object.values(data.sideGrid || []))],
-          topGrid: [...new Uint8Array(Object.values(data.topGrid || []))],
-          version: data.version || 1
-        };
+        const parsed = parseSerializedProject(JSON.parse(text));
+        if (!parsed) {
+          reject(new Error('Invalid project file'));
+          return;
+        }
         resolve(parsed);
       } catch (error) {
         reject(error);

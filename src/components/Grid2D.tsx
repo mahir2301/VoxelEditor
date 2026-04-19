@@ -249,6 +249,11 @@ export default function Grid2D({
     drawingRef.current = false;
   }, []);
 
+  const handlePointerLeave = useCallback(() => {
+    handleStopDraw();
+    setHoverCell(null);
+  }, [handleStopDraw]);
+
   return (
     <section className={styles.root}>
       <header className={styles.header}>
@@ -265,10 +270,7 @@ export default function Grid2D({
           onMouseDown={handlePointerDown}
           onMouseMove={handlePointerMove}
           onMouseUp={handleStopDraw}
-          onMouseLeave={() => {
-            handleStopDraw();
-            setHoverCell(null);
-          }}
+          onMouseLeave={handlePointerLeave}
         />
       </div>
     </section>

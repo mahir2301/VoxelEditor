@@ -83,7 +83,8 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
     }
 
     case 'SET_CELL': {
-      const gridKey = `${action.grid}Grid`;
+      const gridKey =
+        action.grid === 'front' ? 'frontGrid' : action.grid === 'side' ? 'sideGrid' : 'topGrid';
       const current = state[gridKey];
       if (!current || current[action.index] === action.value) {
         return state;
@@ -251,7 +252,8 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
     case 'LOAD_PROJECT': {
       const loaded: SerializedProject = action.state;
       const pieces = (loaded.pieces || []).map((piece) => ({
-        ...piece,
+        id: piece.id,
+        name: piece.name,
         voxels: new Uint8Array(piece.voxels)
       }));
       const resolution = loaded.resolution || DEFAULT_RESOLUTION;

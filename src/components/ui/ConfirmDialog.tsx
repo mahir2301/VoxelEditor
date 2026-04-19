@@ -22,11 +22,7 @@ export default function ConfirmDialog({
   onConfirm
 }: Props) {
   return (
-    <ModalOverlay
-      isOpen={isOpen}
-      onOpenChange={(open) => !open && onCancel?.()}
-      className={styles.overlay}
-    >
+    <ModalOverlay isOpen={isOpen} className={styles.overlay}>
       <Modal className={styles.modal}>
         <Dialog>
           <h2 className={styles.title}>{title}</h2>

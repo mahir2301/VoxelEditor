@@ -1,4 +1,5 @@
 import { serializeState } from '../../../utils/exportGLB';
+import { parseSerializedProject } from './projectSchema';
 import type { EditorState, SerializedProject } from './types';
 
 const STORAGE_KEY = 'voxel-editor-autosave';
@@ -13,7 +14,7 @@ export function loadStateFromStorage(): SerializedProject | null {
     return null;
   }
   try {
-    return JSON.parse(raw);
+    return parseSerializedProject(JSON.parse(raw));
   } catch {
     return null;
   }

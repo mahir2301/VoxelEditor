@@ -152,6 +152,132 @@ export default function App() {
     setScreen('landing');
   }, []);
 
+  const handleCancelPendingPiece = useCallback(() => {
+    setPendingPieceId(null);
+  }, []);
+
+  const handleCancelBackToLanding = useCallback(() => {
+    setPendingBackToLanding(false);
+  }, []);
+
+  const handleSetTool = useCallback(
+    (tool: EditorTool) => {
+      runAction({ tool, type: 'SET_TOOL' });
+    },
+    [runAction]
+  );
+
+  const handleSetCameraMode = useCallback(
+    (mode: CameraMode) => {
+      runAction({ mode, type: 'SET_CAMERA_MODE' });
+      if (mode === 'perspective') {
+        runAction({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
+        setPieceCameraView('perspective');
+        setModelCameraView('perspective');
+      } else {
+        runAction({ type: 'SET_CAMERA_VIEW', view: 'isometric' });
+        setPieceCameraView('isometric');
+        setModelCameraView('isometric');
+      }
+    },
+    [runAction]
+  );
+
+  const handleNewPiece = useCallback(() => {
+    runAction({ type: 'CANCEL_EDITING' });
+  }, [runAction]);
+
+  const handlePushOrFinishPiece = useCallback(() => {
+    runAction({ type: finishPieceAction }, true);
+  }, [finishPieceAction, runAction]);
+
+  const handleCancelEditing = useCallback(() => {
+    runAction({ type: 'CANCEL_EDITING' });
+  }, [runAction]);
+
+  const handleUndo = useCallback(() => {
+    runAction({ type: 'UNDO' }, true);
+  }, [runAction]);
+
+  const handleRedo = useCallback(() => {
+    runAction({ type: 'REDO' }, true);
+  }, [runAction]);
+
+  const handleBackToLanding = useCallback(() => {
+    if (hasUnsavedManualChanges) {
+      setPendingBackToLanding(true);
+      return;
+    }
+    goToLanding();
+  }, [goToLanding, hasUnsavedManualChanges]);
+
+  const handleFrontCellChange = useCallback(
+    (index: number, value: number) => {
+      handleSetCell('front', index, value);
+    },
+    [handleSetCell]
+  );
+
+  const handleSideCellChange = useCallback(
+    (index: number, value: number) => {
+      handleSetCell('side', index, value);
+    },
+    [handleSetCell]
+  );
+
+  const handleTopCellChange = useCallback(
+    (index: number, value: number) => {
+      handleSetCell('top', index, value);
+    },
+    [handleSetCell]
+  );
+
+  const handleFrontView = useCallback(() => {
+    runAction({ type: 'SET_CAMERA_VIEW', view: 'front' });
+    setPieceCameraView('front');
+    setModelCameraView('front');
+  }, [runAction]);
+
+  const handleRightView = useCallback(() => {
+    runAction({ type: 'SET_CAMERA_VIEW', view: 'right' });
+    setPieceCameraView('right');
+    setModelCameraView('right');
+  }, [runAction]);
+
+  const handleTopView = useCallback(() => {
+    runAction({ type: 'SET_CAMERA_VIEW', view: 'top' });
+    setPieceCameraView('top');
+    setModelCameraView('top');
+  }, [runAction]);
+
+  const handleRenamePiece = useCallback(
+    (pieceId: string, name: string) => {
+      runAction({ name, pieceId, type: 'RENAME_PIECE' }, true);
+    },
+    [runAction]
+  );
+
+  const handleDeletePiece = useCallback(
+    (pieceId: string) => {
+      runAction({ pieceId, type: 'DELETE_PIECE' }, true);
+    },
+    [runAction]
+  );
+
+  const handleColorSelect = useCallback(
+    (colorIndex: number) => {
+      runAction({ colorIndex, type: 'SET_COLOR' });
+    },
+    [runAction]
+  );
+
+  const handlePaletteColorChange = useCallback(
+    (colorIndex: number, color: string) => {
+      runAction({ color, colorIndex, type: 'SET_PALETTE_COLOR' }, true);
+    },
+    [runAction]
+  );
+
   if (screen === 'landing') {
     return (
       <LandingScreen
@@ -173,7 +299,7 @@ export default function App() {
         description="You have unsaved grid edits for the current draft piece. Switch anyway?"
         cancelLabel="Cancel"
         confirmLabel="Switch"
-        onCancel={() => setPendingPieceId(null)}
+        onCancel={handleCancelPendingPiece}
         onConfirm={handleConfirmPieceSwitch}
       />
 
@@ -183,7 +309,7 @@ export default function App() {
         description="You have edits since the last manual save/export. Go back to landing anyway?"
         cancelLabel="Stay"
         confirmLabel="Leave"
-        onCancel={() => setPendingBackToLanding(false)}
+        onCancel={handleCancelBackToLanding}
         onConfirm={goToLanding}
       />
 
@@ -192,33 +318,14 @@ export default function App() {
         canUndo={canUndo}
         canRedo={canRedo}
         hasPieceVoxels={hasPieceVoxels}
-        onSetTool={(tool: EditorTool) => runAction({ tool, type: 'SET_TOOL' })}
-        onSetCameraMode={(mode: CameraMode) => {
-          runAction({ mode, type: 'SET_CAMERA_MODE' });
-          if (mode === 'perspective') {
-            runAction({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
-            setPieceCameraView('perspective');
-            setModelCameraView('perspective');
-          } else {
-            runAction({ type: 'SET_CAMERA_VIEW', view: 'isometric' });
-            setPieceCameraView('isometric');
-            setModelCameraView('isometric');
-          }
-        }}
-        onNewPiece={() => runAction({ type: 'CANCEL_EDITING' })}
-        onPushOrFinishPiece={() => {
-          runAction({ type: finishPieceAction }, true);
-        }}
-        onCancelEditing={() => runAction({ type: 'CANCEL_EDITING' })}
-        onUndo={() => runAction({ type: 'UNDO' }, true)}
-        onRedo={() => runAction({ type: 'REDO' }, true)}
-        onBackToLanding={() => {
-          if (hasUnsavedManualChanges) {
-            setPendingBackToLanding(true);
-            return;
-          }
-          goToLanding();
-        }}
+        onSetTool={handleSetTool}
+        onSetCameraMode={handleSetCameraMode}
+        onNewPiece={handleNewPiece}
+        onPushOrFinishPiece={handlePushOrFinishPiece}
+        onCancelEditing={handleCancelEditing}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onBackToLanding={handleBackToLanding}
         onManualCheckpoint={markClean}
       />
 
@@ -231,12 +338,8 @@ export default function App() {
             tool={state.tool}
             view="front"
             modelVoxels={effectiveModelVoxels}
-            onSetCell={(index, value) => handleSetCell('front', index, value)}
-            onViewClick={() => {
-              runAction({ type: 'SET_CAMERA_VIEW', view: 'front' });
-              setPieceCameraView('front');
-              setModelCameraView('front');
-            }}
+            onSetCell={handleFrontCellChange}
+            onViewClick={handleFrontView}
           />
           <Grid2D
             gridData={state.sideGrid}
@@ -245,12 +348,8 @@ export default function App() {
             tool={state.tool}
             view="side"
             modelVoxels={effectiveModelVoxels}
-            onSetCell={(index, value) => handleSetCell('side', index, value)}
-            onViewClick={() => {
-              runAction({ type: 'SET_CAMERA_VIEW', view: 'right' });
-              setPieceCameraView('right');
-              setModelCameraView('right');
-            }}
+            onSetCell={handleSideCellChange}
+            onViewClick={handleRightView}
           />
           <Grid2D
             gridData={state.topGrid}
@@ -259,12 +358,8 @@ export default function App() {
             tool={state.tool}
             view="top"
             modelVoxels={effectiveModelVoxels}
-            onSetCell={(index, value) => handleSetCell('top', index, value)}
-            onViewClick={() => {
-              runAction({ type: 'SET_CAMERA_VIEW', view: 'top' });
-              setPieceCameraView('top');
-              setModelCameraView('top');
-            }}
+            onSetCell={handleTopCellChange}
+            onViewClick={handleTopView}
           />
 
           <div className={styles.piecePreview}>
@@ -287,12 +382,8 @@ export default function App() {
               resolution={state.resolution}
               editingPieceId={state.editingPieceId}
               onSelectPiece={handleLoadPiece}
-              onRenamePiece={(pieceId, name) => {
-                runAction({ name, pieceId, type: 'RENAME_PIECE' }, true);
-              }}
-              onDeletePiece={(pieceId) => {
-                runAction({ pieceId, type: 'DELETE_PIECE' }, true);
-              }}
+              onRenamePiece={handleRenamePiece}
+              onDeletePiece={handleDeletePiece}
             />
           </div>
 
@@ -300,10 +391,8 @@ export default function App() {
             <ColorPalette
               palette={state.palette}
               selectedColor={state.selectedColor}
-              onColorSelect={(colorIndex: number) => runAction({ colorIndex, type: 'SET_COLOR' })}
-              onColorChange={(colorIndex, color) => {
-                runAction({ color, colorIndex, type: 'SET_PALETTE_COLOR' }, true);
-              }}
+              onColorSelect={handleColorSelect}
+              onColorChange={handlePaletteColorChange}
             />
             <div className={styles.hint}>{getToolHint(state.tool)}</div>
           </div>
