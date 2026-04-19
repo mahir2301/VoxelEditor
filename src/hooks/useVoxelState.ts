@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
-import type { Dispatch } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import {
   DEFAULT_RESOLUTION,
   getInitialState,
   reducer
 } from '../features/editor/state/editorReducer';
 import { saveStateToStorage } from '../features/editor/state/persistence';
-import type { EditorAction } from '../features/editor/state/types';
 
 export function useVoxelState() {
   const [state, dispatch] = useReducer(reducer, getInitialState(DEFAULT_RESOLUTION));
@@ -27,7 +25,7 @@ export function useVoxelState() {
     };
   }, [state]);
 
-  const getEffectiveModelVoxels = useCallback(() => {
+  const effectiveModelVoxels = useMemo(() => {
     if (!state.editingPieceId) {
       return state.modelVoxels;
     }
@@ -40,19 +38,17 @@ export function useVoxelState() {
     return overlay;
   }, [state.editingPieceId, state.modelVoxels, state.pieceVoxels]);
 
-  const getEditingPieceVoxels = useCallback(() => {
-    if (!state.editingPieceId) {
-      return null;
-    }
-    return state.pieceVoxels;
-  }, [state.editingPieceId, state.pieceVoxels]);
+  const editingPieceVoxels = useMemo(
+    () => (state.editingPieceId ? state.pieceVoxels : null),
+    [state.editingPieceId, state.pieceVoxels]
+  );
 
   return {
     canRedo: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
     canUndo: state.historyIndex > 0,
-    dispatch: dispatch as Dispatch<EditorAction>,
-    getEditingPieceVoxels,
-    getEffectiveModelVoxels,
+    dispatch,
+    editingPieceVoxels,
+    effectiveModelVoxels,
     state
   };
 }

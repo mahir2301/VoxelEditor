@@ -29,7 +29,7 @@ function getToolHint(tool: EditorTool): string {
 }
 
 export default function App() {
-  const { state, dispatch, canUndo, canRedo, getEffectiveModelVoxels, getEditingPieceVoxels } =
+  const { state, dispatch, canUndo, canRedo, effectiveModelVoxels, editingPieceVoxels } =
     useVoxelState();
   const [screen, setScreen] = useState<'landing' | 'editor'>('landing');
   const [landingResolution, setLandingResolution] = useState(16);
@@ -43,8 +43,6 @@ export default function App() {
   );
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
-  const effectiveModelVoxels = getEffectiveModelVoxels();
-  const editingPieceVoxels = getEditingPieceVoxels();
   const previewPieceOverlayVoxels =
     editingPieceVoxels || (hasPieceVoxels ? state.pieceVoxels : null);
 
@@ -66,6 +64,15 @@ export default function App() {
     setPieceCameraView(effectiveView);
     setModelCameraView(effectiveView);
   }, []);
+
+  const setEditorView = useCallback(
+    (view: CameraView) => {
+      runAction({ type: 'SET_CAMERA_VIEW', view });
+      setPieceCameraView(view);
+      setModelCameraView(view);
+    },
+    [runAction]
+  );
 
   const openEditorWithProject = useCallback(
     (project: SerializedProject) => {
@@ -170,17 +177,9 @@ export default function App() {
   const handleSetCameraMode = useCallback(
     (mode: CameraMode) => {
       runAction({ mode, type: 'SET_CAMERA_MODE' });
-      if (mode === 'perspective') {
-        runAction({ type: 'SET_CAMERA_VIEW', view: 'perspective' });
-        setPieceCameraView('perspective');
-        setModelCameraView('perspective');
-      } else {
-        runAction({ type: 'SET_CAMERA_VIEW', view: 'isometric' });
-        setPieceCameraView('isometric');
-        setModelCameraView('isometric');
-      }
+      setEditorView(mode === 'perspective' ? 'perspective' : 'isometric');
     },
-    [runAction]
+    [runAction, setEditorView]
   );
 
   const handleNewPiece = useCallback(() => {
@@ -233,22 +232,16 @@ export default function App() {
   );
 
   const handleFrontView = useCallback(() => {
-    runAction({ type: 'SET_CAMERA_VIEW', view: 'front' });
-    setPieceCameraView('front');
-    setModelCameraView('front');
-  }, [runAction]);
+    setEditorView('front');
+  }, [setEditorView]);
 
   const handleRightView = useCallback(() => {
-    runAction({ type: 'SET_CAMERA_VIEW', view: 'right' });
-    setPieceCameraView('right');
-    setModelCameraView('right');
-  }, [runAction]);
+    setEditorView('right');
+  }, [setEditorView]);
 
   const handleTopView = useCallback(() => {
-    runAction({ type: 'SET_CAMERA_VIEW', view: 'top' });
-    setPieceCameraView('top');
-    setModelCameraView('top');
-  }, [runAction]);
+    setEditorView('top');
+  }, [setEditorView]);
 
   const handleRenamePiece = useCallback(
     (pieceId: string, name: string) => {

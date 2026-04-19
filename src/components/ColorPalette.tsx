@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   Button,
   ColorArea,
@@ -32,13 +32,10 @@ export default function ColorPalette({
   onColorChange
 }: Props) {
   const selectedHex = palette[selectedColor] || '#808080';
-
-  const handlers = useMemo(
-    () => ({
-      onColorPickerChange: (color: { toString: (format: 'hex') => string }) => {
-        onColorChange(selectedColor, color.toString('hex'));
-      }
-    }),
+  const handleColorPickerChange = useCallback(
+    (color: { toString: (format: 'hex') => string }) => {
+      onColorChange(selectedColor, color.toString('hex'));
+    },
     [onColorChange, selectedColor]
   );
 
@@ -63,7 +60,7 @@ export default function ColorPalette({
 
       <ColorPicker
         value={parseColor(selectedHex).toFormat('hsb')}
-        onChange={handlers.onColorPickerChange}
+        onChange={handleColorPickerChange}
       >
         <Label className={styles.label}>Color</Label>
         <DialogTrigger>

@@ -16,6 +16,11 @@ function buildVoxelGeometryForExport(
   const positions = [];
   const colorAttr = [];
   const indices = [];
+  const paletteRgb = palette.map((entry) => {
+    const color = new THREE.Color(entry);
+    return [color.r, color.g, color.b] as const;
+  });
+  const fallbackRgb = paletteRgb[0] || ([1, 1, 1] as const);
 
   // Same face definitions as scene but with FLIPPED winding (reversed vertex order)
   const faceData = [
@@ -93,7 +98,7 @@ function buildVoxelGeometryForExport(
     const z = Math.floor(i / (size * size));
 
     const colorIdx = colors ? colors[i] : 0;
-    const color = new THREE.Color(palette[colorIdx] || palette[0]);
+    const [r, g, b] = paletteRgb[colorIdx] || fallbackRgb;
 
     const ox = x - size / 2;
     const oy = y - size / 2;
@@ -112,7 +117,7 @@ function buildVoxelGeometryForExport(
 
       for (const v of face.verts) {
         positions.push(ox + v[0], oy + v[1], oz + v[2]);
-        colorAttr.push(color.r, color.g, color.b);
+        colorAttr.push(r, g, b);
       }
 
       indices.push(
