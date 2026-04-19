@@ -20,6 +20,10 @@ interface Props {
   onBackToLanding: () => void;
   onSaveProject: () => void;
   onExportGlb: () => void;
+  onOpenShortcuts: () => void;
+  hasUnsavedChanges: boolean;
+  isSavingProject: boolean;
+  isExportingGlb: boolean;
 }
 
 export default function Toolbar({
@@ -36,7 +40,11 @@ export default function Toolbar({
   onRedo,
   onBackToLanding,
   onSaveProject,
-  onExportGlb
+  onExportGlb,
+  onOpenShortcuts,
+  hasUnsavedChanges,
+  isSavingProject,
+  isExportingGlb
 }: Props) {
   const isEditing = Boolean(state.editingPieceId);
 
@@ -165,11 +173,21 @@ export default function Toolbar({
 
       <div className={styles.group}>
         <span className={styles.label}>Project</span>
-        <Button onPress={onSaveProject}>{actionLabel('Save', HOTKEYS.saveProject)}</Button>
-        <Button variant="success" onPress={onExportGlb}>
-          {actionLabel('Export GLB', HOTKEYS.exportGlb)}
+        <Button isDisabled={isSavingProject || isExportingGlb} onPress={onSaveProject}>
+          {isSavingProject ? 'Saving...' : actionLabel('Save', HOTKEYS.saveProject)}
+        </Button>
+        <Button
+          variant="success"
+          isDisabled={isSavingProject || isExportingGlb}
+          onPress={onExportGlb}
+        >
+          {isExportingGlb ? 'Exporting...' : actionLabel('Export GLB', HOTKEYS.exportGlb)}
         </Button>
         <Button onPress={onBackToLanding}>{actionLabel('Back', HOTKEYS.backToLanding)}</Button>
+        <Button onPress={onOpenShortcuts}>{actionLabel('Shortcuts', HOTKEYS.openShortcuts)}</Button>
+        <span className={hasUnsavedChanges ? styles.dirtyBadge : styles.cleanBadge}>
+          {hasUnsavedChanges ? 'Unsaved' : 'Saved'}
+        </span>
       </div>
     </div>
   );

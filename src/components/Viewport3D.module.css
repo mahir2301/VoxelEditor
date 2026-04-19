@@ -47,3 +47,13 @@
   touch-action: none;
   z-index: 2;
 }
+
+.overlayActions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.35rem;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+}

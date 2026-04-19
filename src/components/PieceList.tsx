@@ -4,6 +4,7 @@ import { Input, TextField } from 'react-aria-components';
 import type { Piece } from '../features/editor/state/types';
 import { cn } from '../lib/cn';
 import Button from './ui/Button';
+import SelectField from './ui/SelectField';
 import styles from './PieceList.module.css';
 
 interface PieceThumbnailProps {
@@ -32,6 +33,22 @@ interface PieceRowProps {
   onRenameValueChange: (value: string) => void;
   onCommitRename: () => void;
   onCancelRename: () => void;
+}
+
+const SORT_OPTIONS = [
+  { label: 'Recent', value: 0 },
+  { label: 'Name', value: 1 },
+  { label: 'Size', value: 2 }
+];
+
+function countPieceVoxels(voxels: Uint8Array): number {
+  let count = 0;
+  for (let index = 0; index < voxels.length; index += 1) {
+    if (voxels[index]) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 function PieceThumbnail({ voxels, resolution }: PieceThumbnailProps) {
@@ -212,6 +229,8 @@ export default function PieceList({
 }: Props) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortMode, setSortMode] = useState(0);
 
   const commitRename = useCallback(() => {
     if (renamingId && renameValue.trim()) {
@@ -235,16 +254,59 @@ export default function PieceList({
     setRenameValue(value);
   }, []);
 
+  const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+  }, []);
+
+  const visiblePieces = useMemo(() => {
+    const filtered = pieces.filter((piece) =>
+      piece.name.toLowerCase().includes(search.trim().toLowerCase())
+    );
+
+    if (sortMode === 1) {
+      return [...filtered].sort((left, right) => left.name.localeCompare(right.name));
+    }
+    if (sortMode === 2) {
+      return [...filtered].sort(
+        (left, right) => countPieceVoxels(right.voxels) - countPieceVoxels(left.voxels)
+      );
+    }
+
+    return [...filtered].reverse();
+  }, [pieces, search, sortMode]);
+
   return (
     <section className={styles.root}>
       <header className={styles.header}>
         <h2 className={styles.title}>Pieces ({pieces.length})</h2>
+        <div className={styles.controls}>
+          <TextField className={styles.searchField}>
+            <Input
+              className={styles.searchInput}
+              value={search}
+              placeholder="Search pieces"
+              onChange={handleSearchChange}
+            />
+          </TextField>
+          <div className={styles.sortWrap}>
+            <SelectField
+              label="Sort"
+              options={SORT_OPTIONS}
+              value={sortMode}
+              onChange={setSortMode}
+            />
+          </div>
+        </div>
       </header>
 
       <div className={styles.list}>
-        {pieces.length === 0 && <div className={styles.empty}>No pieces yet.</div>}
+        {visiblePieces.length === 0 && (
+          <div className={styles.empty}>
+            {pieces.length === 0 ? 'No pieces yet.' : 'No matching pieces.'}
+          </div>
+        )}
 
-        {pieces.map((piece) => (
+        {visiblePieces.map((piece) => (
           <PieceRow
             key={piece.id}
             piece={piece}

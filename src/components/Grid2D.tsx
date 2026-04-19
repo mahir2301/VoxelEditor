@@ -20,6 +20,43 @@ interface DrawCanvasInput {
   hoverCell: HoverCell | null;
   modelVoxels?: Uint8Array | null;
   view: 'front' | 'side' | 'top';
+  fillMask?: Uint8Array | null;
+}
+
+function computeFillMask(gridData: Uint8Array, size: number, startIndex: number): Uint8Array {
+  const mask = new Uint8Array(gridData.length);
+  const target = gridData[startIndex];
+  const queue = [startIndex];
+  mask[startIndex] = 1;
+
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const index = queue[cursor];
+    const x = index % size;
+    const y = Math.floor(index / size);
+
+    const tryVisit = (next: number) => {
+      if (mask[next] || gridData[next] !== target) {
+        return;
+      }
+      mask[next] = 1;
+      queue.push(next);
+    };
+
+    if (x > 0) {
+      tryVisit(index - 1);
+    }
+    if (x < size - 1) {
+      tryVisit(index + 1);
+    }
+    if (y > 0) {
+      tryVisit(index - size);
+    }
+    if (y < size - 1) {
+      tryVisit(index + size);
+    }
+  }
+
+  return mask;
 }
 
 interface Props {
@@ -36,7 +73,7 @@ interface Props {
 
 function drawCanvas(
   ctx: CanvasRenderingContext2D,
-  { gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view }: DrawCanvasInput
+  { gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view, fillMask }: DrawCanvasInput
 ): void {
   ctx.fillStyle = '#111b2a';
   ctx.fillRect(0, 0, canvasDim, canvasDim);
@@ -134,6 +171,18 @@ function drawCanvas(
     ctx.stroke();
   }
 
+  if (fillMask) {
+    ctx.fillStyle = 'rgba(119, 201, 160, 0.26)';
+    for (let index = 0; index < fillMask.length; index += 1) {
+      if (!fillMask[index]) {
+        continue;
+      }
+      const x = index % size;
+      const y = Math.floor(index / size);
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+
   if (hoverCell) {
     ctx.strokeStyle = '#d3e6f8';
     ctx.lineWidth = 1.8;
@@ -156,6 +205,7 @@ export default function Grid2D({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
   const [hoverCell, setHoverCell] = useState<HoverCell | null>(null);
+  const [fillMask, setFillMask] = useState<Uint8Array | null>(null);
   const [canvasDim, setCanvasDim] = useState(300);
 
   useEffect(() => {
@@ -187,8 +237,17 @@ export default function Grid2D({
     if (!context) {
       return;
     }
-    drawCanvas(context, { canvasDim, cellSize, gridData, hoverCell, modelVoxels, size, view });
-  }, [canvasDim, cellSize, gridData, hoverCell, modelVoxels, size, view]);
+    drawCanvas(context, {
+      canvasDim,
+      cellSize,
+      gridData,
+      hoverCell,
+      modelVoxels,
+      size,
+      view,
+      fillMask
+    });
+  }, [canvasDim, cellSize, fillMask, gridData, hoverCell, modelVoxels, size, view]);
 
   const getCell = useCallback(
     (event: ReactMouseEvent<HTMLCanvasElement>): HoverCell | null => {
@@ -228,10 +287,12 @@ export default function Grid2D({
         return;
       }
       if (tool === 'fill') {
+        setFillMask(null);
         onFillCell(cell.index, 1);
         return;
       }
       if (tool === 'fillErase') {
+        setFillMask(null);
         onFillCell(cell.index, 0);
         return;
       }
@@ -245,6 +306,11 @@ export default function Grid2D({
     (event: ReactMouseEvent<HTMLCanvasElement>) => {
       const cell = getCell(event);
       setHoverCell(cell);
+      if (cell && (tool === 'fill' || tool === 'fillErase')) {
+        setFillMask(computeFillMask(gridData, size, cell.index));
+      } else {
+        setFillMask(null);
+      }
       if (!drawingRef.current || !cell) {
         return;
       }
@@ -253,7 +319,7 @@ export default function Grid2D({
       }
       applyTool(cell.index);
     },
-    [applyTool, getCell, tool]
+    [applyTool, getCell, gridData, size, tool]
   );
 
   const handleStopDraw = useCallback(() => {
@@ -263,7 +329,21 @@ export default function Grid2D({
   const handlePointerLeave = useCallback(() => {
     handleStopDraw();
     setHoverCell(null);
+    setFillMask(null);
   }, [handleStopDraw]);
+
+  const activeToolLabel =
+    tool === 'fill'
+      ? 'Fill'
+      : tool === 'fillErase'
+        ? 'Fill Erase'
+        : tool === 'paint'
+          ? 'Paint'
+          : tool === 'paintFill'
+            ? 'Paint Fill'
+            : tool === 'erase'
+              ? 'Erase'
+              : 'Draw';
 
   const viewHotkey =
     view === 'front'
@@ -275,7 +355,10 @@ export default function Grid2D({
   return (
     <section className={styles.root}>
       <header className={styles.header}>
-        <span className={styles.label}>{label}</span>
+        <div className={styles.headerLeft}>
+          <span className={styles.label}>{label}</span>
+          <span className={styles.toolPill}>{activeToolLabel}</span>
+        </div>
         <Button onPress={onViewClick}>
           <span className={styles.actionLabel}>
             <span>View</span>

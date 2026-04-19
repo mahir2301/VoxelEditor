@@ -23,6 +23,23 @@
   color: #c0d1e2;
 }
 
+.headerLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toolPill {
+  border: 1px solid rgba(151, 174, 197, 0.42);
+  border-radius: 999px;
+  background: rgba(9, 18, 30, 0.72);
+  color: #aec7de;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.34rem;
+}
+
 .actionLabel {
   display: inline-flex;
   align-items: center;

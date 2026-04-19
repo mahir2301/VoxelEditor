@@ -61,6 +61,7 @@ export default function LandingScreen({
   onLoadAutosave
 }: Props) {
   const [importError, setImportError] = useState<ImportErrorDialogState | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const closeImportError = useCallback(() => {
     setImportError(null);
@@ -72,6 +73,7 @@ export default function LandingScreen({
       if (!file) {
         return;
       }
+      setImporting(true);
       try {
         const { importProject } = await import('../utils/exportGLB');
         const project = await importProject(file);
@@ -79,6 +81,8 @@ export default function LandingScreen({
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         setImportError(buildImportErrorDialogState(message));
+      } finally {
+        setImporting(false);
       }
     },
     [onLoadProject]
@@ -120,9 +124,9 @@ export default function LandingScreen({
           <h2 className={styles.sectionTitle}>Open Project</h2>
           <div className={styles.row}>
             <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handleImport}>
-              <Button>Load Project</Button>
+              <Button isDisabled={importing}>{importing ? 'Importing...' : 'Load Project'}</Button>
             </FileTrigger>
-            <Button isDisabled={!hasAutosave} onPress={onLoadAutosave}>
+            <Button isDisabled={!hasAutosave || importing} onPress={onLoadAutosave}>
               Load Autosave
             </Button>
           </div>

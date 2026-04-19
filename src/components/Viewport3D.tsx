@@ -8,6 +8,7 @@ import type { Group } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { CameraMode, CameraView } from '../features/editor/state/types';
 import { buildVoxelGeometry, getVoxelIndexFromHit } from '../utils/voxelUtils';
+import Button from './ui/Button';
 import styles from './Viewport3D.module.css';
 
 interface VoxelMeshProps {
@@ -44,6 +45,7 @@ interface Props {
   viewResetToken?: number;
   onVoxelClick?: (index: number) => void;
   onCameraViewChange?: (view: CameraView) => void;
+  onResetView?: () => void;
 }
 
 const DEFAULT_PERSPECTIVE_DIRECTION: [number, number, number] = [1, 0.85, 1];
@@ -394,7 +396,8 @@ export default function Viewport3D({
   cameraView,
   viewResetToken,
   onVoxelClick,
-  onCameraViewChange
+  onCameraViewChange,
+  onResetView
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const orientationRef = useRef(new Quaternion());
@@ -498,6 +501,9 @@ export default function Viewport3D({
             <directionalLight position={MINI_LIGHT_POSITION} intensity={0.7} />
             <OrientationWidget orientationRef={orientationRef} onSelectView={onCameraViewChange} />
           </Canvas>
+          <div className={styles.overlayActions}>
+            <Button onPress={onResetView}>Reset View</Button>
+          </div>
         </div>
       </div>
     </section>

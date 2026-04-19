@@ -1,0 +1,54 @@
+.grid {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.group {
+  border: 1px solid rgba(132, 157, 182, 0.3);
+  border-radius: 0.55rem;
+  background: rgba(8, 14, 24, 0.48);
+  padding: 0.45rem 0.55rem;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #a8c0d8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.list {
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: #d5e6f7;
+  font-size: 0.8rem;
+}
+
+.hotkey {
+  border: 1px solid rgba(154, 176, 200, 0.45);
+  border-radius: 0.25rem;
+  background: rgba(6, 13, 22, 0.72);
+  color: #bad0e4;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0.14rem 0.24rem;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
