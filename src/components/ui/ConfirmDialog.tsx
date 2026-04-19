@@ -1,6 +1,6 @@
-import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
+import BaseDialog from './BaseDialog';
 import Button from './Button';
-import styles from './ConfirmDialog.module.css';
+import styles from './BaseDialog.module.css';
 
 interface Props {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface Props {
   details?: string;
   cancelLabel: string;
   confirmLabel?: string;
+  confirmVariant?: 'danger' | 'accent' | 'success' | 'default';
   onCancel?: () => void;
   onConfirm?: () => void;
 }
@@ -20,31 +21,20 @@ export default function ConfirmDialog({
   details,
   cancelLabel,
   confirmLabel,
+  confirmVariant = 'danger',
   onCancel,
   onConfirm
 }: Props) {
   return (
-    <ModalOverlay isOpen={isOpen} className={styles.overlay}>
-      <Modal className={styles.modal}>
-        <Dialog>
-          <h2 className={styles.title}>{title}</h2>
-          <p className={styles.description}>{description}</p>
-          {details ? (
-            <details className={styles.details}>
-              <summary className={styles.detailsSummary}>Technical details</summary>
-              <pre className={styles.detailsBody}>{details}</pre>
-            </details>
-          ) : null}
-          <div className={styles.actions}>
-            <Button onPress={onCancel}>{cancelLabel}</Button>
-            {confirmLabel ? (
-              <Button variant="danger" onPress={onConfirm}>
-                {confirmLabel}
-              </Button>
-            ) : null}
-          </div>
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+    <BaseDialog isOpen={isOpen} title={title} description={description} details={details}>
+      <div className={styles.actions}>
+        <Button onPress={onCancel}>{cancelLabel}</Button>
+        {confirmLabel ? (
+          <Button variant={confirmVariant} onPress={onConfirm}>
+            {confirmLabel}
+          </Button>
+        ) : null}
+      </div>
+    </BaseDialog>
   );
 }

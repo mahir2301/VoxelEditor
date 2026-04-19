@@ -13,6 +13,31 @@
   border-bottom: 1px solid rgba(132, 157, 182, 0.2);
 }
 
+.controls {
+  margin-top: 0.45rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 150px);
+  gap: 0.45rem;
+}
+
+.searchField {
+  width: 100%;
+}
+
+.searchInput {
+  width: 100%;
+  border: 1px solid rgba(132, 157, 182, 0.4);
+  border-radius: 0.4rem;
+  background: rgba(6, 13, 22, 0.8);
+  color: #dce8f5;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.8rem;
+}
+
+.sortWrap {
+  min-width: 0;
+}
+
 .title {
   margin: 0;
   font-size: 0.74rem;

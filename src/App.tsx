@@ -1,7 +1,10 @@
 import { useHotkeys } from '@tanstack/react-hotkeys';
+import type { UseHotkeyDefinition } from '@tanstack/react-hotkeys';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import HotkeyDialog from './components/HotkeyDialog';
 import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
+import { ToastRegionProvider, toastQueue } from './components/ui/ToastQueue';
 import { HOTKEYS } from './features/editor/hotkeys';
 import { loadStateFromStorage } from './features/editor/state/persistence';
 import { serializeState } from './features/editor/state/serialization';
@@ -22,6 +25,18 @@ const PieceList = lazy(() => import('./components/PieceList'));
 const ColorPalette = lazy(() => import('./components/ColorPalette'));
 const Viewport3D = lazy(() => import('./components/Viewport3D'));
 const EDITOR_LOADING_FALLBACK = <div className={styles.loading}>Loading editor...</div>;
+const ONBOARDING_KEY = 'voxel-editor-onboarding-v1';
+const ONBOARDING_STEPS = [
+  'Draw your piece by filling the Front, Side, and Top projection grids.',
+  'Push the draft into the model, then create more pieces or edit existing ones.',
+  'Use Paint and Paint Fill on the model preview to color visible voxels.'
+] as const;
+
+interface PendingDeletePiece {
+  id: string;
+  name: string;
+  voxelCount: number;
+}
 
 export default function App() {
   const { state, dispatch, canUndo, canRedo, effectiveModelVoxels, editingPieceVoxels } =
@@ -38,6 +53,14 @@ export default function App() {
   );
   const [cameraViewResetToken, setCameraViewResetToken] = useState(0);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [isExportingGlb, setIsExportingGlb] = useState(false);
+  const [isHotkeysOpen, setIsHotkeysOpen] = useState(false);
+  const [pendingDeletePiece, setPendingDeletePiece] = useState<PendingDeletePiece | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<number>(() => {
+    const seen = localStorage.getItem(ONBOARDING_KEY);
+    return seen ? -1 : 0;
+  });
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const previewPieceOverlayVoxels =
@@ -85,6 +108,7 @@ export default function App() {
       );
       markClean();
       setScreen('editor');
+      toastQueue.add({ title: 'Project loaded.' }, { timeout: 2400 });
     },
     [dispatch, markClean, syncLocalCameraViews]
   );
@@ -165,6 +189,29 @@ export default function App() {
     setHasAutosave(Boolean(loadStateFromStorage()));
     setPendingBackToLanding(false);
     setScreen('landing');
+  }, []);
+
+  const handleOpenHotkeys = useCallback(() => {
+    setIsHotkeysOpen(true);
+  }, []);
+
+  const handleCloseHotkeys = useCallback(() => {
+    setIsHotkeysOpen(false);
+  }, []);
+
+  const dismissOnboarding = useCallback(() => {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    setOnboardingStep(-1);
+  }, []);
+
+  const advanceOnboarding = useCallback(() => {
+    setOnboardingStep((current) => {
+      if (current >= 2) {
+        localStorage.setItem(ONBOARDING_KEY, '1');
+        return -1;
+      }
+      return current + 1;
+    });
   }, []);
 
   const handleCancelPendingPiece = useCallback(() => {
@@ -251,27 +298,50 @@ export default function App() {
   }, [goToLanding, hasUnsavedManualChanges]);
 
   const handleSaveProject = useCallback(() => {
+    if (isSavingProject || isExportingGlb) {
+      return;
+    }
+    setIsSavingProject(true);
     void import('./utils/exportGLB')
       .then(({ exportProject }) => {
         exportProject(serializeState(state));
         markClean();
+        toastQueue.add({ title: 'Project saved.' }, { timeout: 2400 });
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : 'Unknown error';
         setOperationError(`Save failed: ${message}`);
+      })
+      .finally(() => {
+        setIsSavingProject(false);
       });
-  }, [markClean, state]);
+  }, [isExportingGlb, isSavingProject, markClean, state]);
 
   const handleExportGlb = useCallback(async () => {
+    if (isSavingProject || isExportingGlb) {
+      return;
+    }
+    setIsExportingGlb(true);
     try {
       const { exportModelAsGLB } = await import('./utils/exportGLB');
       await exportModelAsGLB(state.modelVoxels, state.modelColors, state.palette, state.resolution);
       markClean();
+      toastQueue.add({ title: 'GLB exported.' }, { timeout: 2400 });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       setOperationError(`Export failed: ${message}`);
+    } finally {
+      setIsExportingGlb(false);
     }
-  }, [markClean, state.modelColors, state.modelVoxels, state.palette, state.resolution]);
+  }, [
+    isExportingGlb,
+    isSavingProject,
+    markClean,
+    state.modelColors,
+    state.modelVoxels,
+    state.palette,
+    state.resolution
+  ]);
 
   const handleFrontCellChange = useCallback(
     (index: number, value: number) => {
@@ -327,6 +397,10 @@ export default function App() {
     setEditorView('top');
   }, [setEditorView]);
 
+  const handleResetCameraView = useCallback(() => {
+    setCameraViewResetToken((value) => value + 1);
+  }, []);
+
   const handleRenamePiece = useCallback(
     (pieceId: string, name: string) => {
       runAction({ name, pieceId, type: 'RENAME_PIECE' }, true);
@@ -336,10 +410,36 @@ export default function App() {
 
   const handleDeletePiece = useCallback(
     (pieceId: string) => {
-      runAction({ pieceId, type: 'DELETE_PIECE' }, true);
+      const piece = state.pieces.find((entry) => entry.id === pieceId);
+      if (!piece) {
+        return;
+      }
+      let voxelCount = 0;
+      for (let index = 0; index < piece.voxels.length; index += 1) {
+        if (piece.voxels[index]) {
+          voxelCount += 1;
+        }
+      }
+      setPendingDeletePiece({
+        id: piece.id,
+        name: piece.name,
+        voxelCount
+      });
     },
-    [runAction]
+    [state.pieces]
   );
+
+  const cancelDeletePiece = useCallback(() => {
+    setPendingDeletePiece(null);
+  }, []);
+
+  const confirmDeletePiece = useCallback(() => {
+    if (!pendingDeletePiece) {
+      return;
+    }
+    runAction({ pieceId: pendingDeletePiece.id, type: 'DELETE_PIECE' }, true);
+    setPendingDeletePiece(null);
+  }, [pendingDeletePiece, runAction]);
 
   const handleColorSelect = useCallback(
     (colorIndex: number) => {
@@ -355,7 +455,7 @@ export default function App() {
     [runAction]
   );
 
-  const hotkeys = useMemo(
+  const hotkeys = useMemo<UseHotkeyDefinition[]>(
     () => [
       { callback: handleSetDrawTool, hotkey: HOTKEYS.drawTool },
       { callback: handleSetEraseTool, hotkey: HOTKEYS.eraseTool },
@@ -382,8 +482,14 @@ export default function App() {
       { callback: handleUndo, hotkey: HOTKEYS.undo, options: { enabled: canUndo } },
       { callback: handleRedo, hotkey: HOTKEYS.redo, options: { enabled: canRedo } },
       { callback: handleSaveProject, hotkey: HOTKEYS.saveProject },
-      { callback: handleExportGlb, hotkey: HOTKEYS.exportGlb },
-      { callback: handleBackToLanding, hotkey: HOTKEYS.backToLanding }
+      {
+        callback: () => {
+          void handleExportGlb();
+        },
+        hotkey: HOTKEYS.exportGlb
+      },
+      { callback: handleBackToLanding, hotkey: HOTKEYS.backToLanding },
+      { callback: handleOpenHotkeys, hotkey: HOTKEYS.openShortcuts }
     ],
     [
       canRedo,
@@ -404,6 +510,7 @@ export default function App() {
       handleSetPaintTool,
       handleSetPerspectiveMode,
       handleSaveProject,
+      handleOpenHotkeys,
       handleExportGlb,
       handleTopView,
       handleUndo,
@@ -457,6 +564,34 @@ export default function App() {
         onCancel={closeOperationError}
       />
 
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeletePiece)}
+        title="Delete piece"
+        description={
+          pendingDeletePiece
+            ? `Delete "${pendingDeletePiece.name}" (${String(pendingDeletePiece.voxelCount)} voxels)?`
+            : ''
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onCancel={cancelDeletePiece}
+        onConfirm={confirmDeletePiece}
+      />
+
+      <ConfirmDialog
+        isOpen={onboardingStep >= 0}
+        title={`Welcome (${String(onboardingStep + 1)}/3)`}
+        description={onboardingStep >= 0 ? ONBOARDING_STEPS[onboardingStep] : ''}
+        cancelLabel="Skip"
+        confirmLabel={onboardingStep >= 2 ? 'Done' : 'Next'}
+        confirmVariant="accent"
+        onCancel={dismissOnboarding}
+        onConfirm={advanceOnboarding}
+      />
+
+      <HotkeyDialog isOpen={isHotkeysOpen} onClose={handleCloseHotkeys} />
+      <ToastRegionProvider />
+
       <Suspense fallback={EDITOR_LOADING_FALLBACK}>
         <Toolbar
           state={state}
@@ -473,6 +608,10 @@ export default function App() {
           onBackToLanding={handleBackToLanding}
           onSaveProject={handleSaveProject}
           onExportGlb={handleExportGlb}
+          onOpenShortcuts={handleOpenHotkeys}
+          hasUnsavedChanges={hasUnsavedManualChanges}
+          isSavingProject={isSavingProject}
+          isExportingGlb={isExportingGlb}
         />
 
         <div className={styles.content}>
@@ -521,6 +660,7 @@ export default function App() {
                 cameraView={pieceCameraView}
                 viewResetToken={cameraViewResetToken}
                 onCameraViewChange={setPieceCameraView}
+                onResetView={handleResetCameraView}
               />
             </div>
           </div>
@@ -559,6 +699,7 @@ export default function App() {
                 viewResetToken={cameraViewResetToken}
                 onVoxelClick={handleVoxelClick}
                 onCameraViewChange={setModelCameraView}
+                onResetView={handleResetCameraView}
               />
             </div>
           </div>

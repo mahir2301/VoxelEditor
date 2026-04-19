@@ -8,6 +8,7 @@ export const HOTKEYS = {
   exportGlb: 'Mod+E',
   isometricCamera: 'I',
   newPiece: 'N',
+  openShortcuts: 'Shift+H',
   paintTool: 'P',
   paintFillTool: 'Shift+P',
   perspectiveCamera: 'O',

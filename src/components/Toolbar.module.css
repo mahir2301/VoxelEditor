@@ -54,3 +54,25 @@
   line-height: 1;
   padding: 0.14rem 0.24rem;
 }
+
+.dirtyBadge,
+.cleanBadge {
+  border-radius: 999px;
+  font-size: 0.64rem;
+  line-height: 1;
+  padding: 0.2rem 0.42rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dirtyBadge {
+  border: 1px solid rgba(231, 173, 99, 0.55);
+  background: rgba(102, 62, 28, 0.5);
+  color: #f0c690;
+}
+
+.cleanBadge {
+  border: 1px solid rgba(116, 183, 140, 0.45);
+  background: rgba(27, 77, 49, 0.4);
+  color: #b1dfc0;
+}
