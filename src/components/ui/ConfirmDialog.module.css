@@ -46,6 +46,32 @@
   line-height: 1.4;
 }
 
+.details {
+  margin-top: 0.7rem;
+  border: 1px solid rgba(139, 162, 185, 0.3);
+  border-radius: 0.45rem;
+  background: rgba(8, 14, 24, 0.5);
+  overflow: hidden;
+}
+
+.detailsSummary {
+  cursor: pointer;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.72rem;
+  color: #b7cce0;
+  user-select: none;
+}
+
+.detailsBody {
+  margin: 0;
+  padding: 0 0.55rem 0.5rem;
+  color: #9db6cd;
+  white-space: pre-wrap;
+  font-size: 0.71rem;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .actions {
   margin-top: 0.95rem;
   display: flex;

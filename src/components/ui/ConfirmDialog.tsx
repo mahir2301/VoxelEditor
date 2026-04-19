@@ -6,8 +6,9 @@ interface Props {
   isOpen: boolean;
   title: string;
   description: string;
+  details?: string;
   cancelLabel: string;
-  confirmLabel: string;
+  confirmLabel?: string;
   onCancel?: () => void;
   onConfirm?: () => void;
 }
@@ -16,6 +17,7 @@ export default function ConfirmDialog({
   isOpen,
   title,
   description,
+  details,
   cancelLabel,
   confirmLabel,
   onCancel,
@@ -27,11 +29,19 @@ export default function ConfirmDialog({
         <Dialog>
           <h2 className={styles.title}>{title}</h2>
           <p className={styles.description}>{description}</p>
+          {details ? (
+            <details className={styles.details}>
+              <summary className={styles.detailsSummary}>Technical details</summary>
+              <pre className={styles.detailsBody}>{details}</pre>
+            </details>
+          ) : null}
           <div className={styles.actions}>
             <Button onPress={onCancel}>{cancelLabel}</Button>
-            <Button variant="danger" onPress={onConfirm}>
-              {confirmLabel}
-            </Button>
+            {confirmLabel ? (
+              <Button variant="danger" onPress={onConfirm}>
+                {confirmLabel}
+              </Button>
+            ) : null}
           </div>
         </Dialog>
       </Modal>
