@@ -4,9 +4,11 @@ import Viewport3D from './components/Viewport3D';
 import PieceList from './components/PieceList';
 import ColorPalette from './components/ColorPalette';
 import Toolbar from './components/Toolbar';
+import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import { useVoxelState } from './hooks/useVoxelState';
-import type { CameraMode, CameraView, EditorTool, GridName } from './features/editor/state/types';
+import { loadStateFromStorage } from './features/editor/state/persistence';
+import type { CameraMode, CameraView, EditorTool, GridName, SerializedProject } from './features/editor/state/types';
 import styles from './App.module.css';
 
 function getToolHint(tool: EditorTool): string {
@@ -17,7 +19,12 @@ function getToolHint(tool: EditorTool): string {
 
 export default function App() {
   const { state, dispatch, canUndo, canRedo, getEffectiveModelVoxels, getEditingPieceVoxels } = useVoxelState();
+  const [screen, setScreen] = useState<'landing' | 'editor'>('landing');
+  const [landingResolution, setLandingResolution] = useState(16);
+  const [hasAutosave, setHasAutosave] = useState(() => Boolean(loadStateFromStorage()));
   const [pendingPieceId, setPendingPieceId] = useState<string | null>(null);
+  const [pendingBackToLanding, setPendingBackToLanding] = useState(false);
+  const [hasUnsavedManualChanges, setHasUnsavedManualChanges] = useState(false);
   const [pieceCameraView, setPieceCameraView] = useState<CameraView>(() => state.cameraView);
   const [modelCameraView, setModelCameraView] = useState<CameraView>(
     () => (state.cameraMode === 'isometric' ? 'isometric' : state.cameraView),
@@ -27,8 +34,43 @@ export default function App() {
   const effectiveModelVoxels = getEffectiveModelVoxels();
   const editingPieceVoxels = getEditingPieceVoxels();
 
+  const syncLocalCameraViews = useCallback((mode: CameraMode, view: CameraView) => {
+    const effectiveView = mode === 'isometric' ? 'isometric' : view;
+    setPieceCameraView(effectiveView === 'isometric' ? 'perspective' : effectiveView);
+    setModelCameraView(effectiveView);
+  }, []);
+
+  const openEditorWithProject = useCallback((project: SerializedProject) => {
+    dispatch({ type: 'LOAD_PROJECT', state: project });
+    setLandingResolution(project.resolution || 16);
+    syncLocalCameraViews(project.cameraMode || 'perspective', project.cameraView || 'perspective');
+    setHasUnsavedManualChanges(false);
+    setScreen('editor');
+  }, [dispatch, syncLocalCameraViews]);
+
+  const handleCreateProject = useCallback(() => {
+    if (state.resolution !== landingResolution) {
+      dispatch({ type: 'SET_RESOLUTION', resolution: landingResolution });
+    } else {
+      dispatch({ type: 'NEW_PROJECT' });
+    }
+    syncLocalCameraViews('perspective', 'perspective');
+    setHasUnsavedManualChanges(false);
+    setScreen('editor');
+  }, [dispatch, landingResolution, state.resolution, syncLocalCameraViews]);
+
+  const handleLoadAutosave = useCallback(() => {
+    const autosave = loadStateFromStorage();
+    if (!autosave) {
+      setHasAutosave(false);
+      return;
+    }
+    openEditorWithProject(autosave);
+  }, [openEditorWithProject]);
+
   const handleSetCell = useCallback((grid: GridName, index: number, value: number) => {
     dispatch({ type: 'SET_CELL', grid, index, value });
+    setHasUnsavedManualChanges(true);
   }, [dispatch]);
 
   const handleLoadPiece = useCallback((pieceId: string) => {
@@ -49,14 +91,35 @@ export default function App() {
   const handleVoxelClick = useCallback((index: number) => {
     if (state.tool === 'paint') {
       dispatch({ type: 'PAINT_VOXEL', index, colorIndex: state.selectedColor });
+      setHasUnsavedManualChanges(true);
       return;
     }
     if (state.tool === 'erase') {
       dispatch({ type: 'PAINT_VOXEL', index, colorIndex: 0 });
+      setHasUnsavedManualChanges(true);
     }
   }, [dispatch, state.selectedColor, state.tool]);
 
   const finishPieceAction = state.editingPieceId ? 'FINISH_EDITING' : 'PUSH_PIECE';
+
+  const goToLanding = useCallback(() => {
+    setHasAutosave(Boolean(loadStateFromStorage()));
+    setPendingBackToLanding(false);
+    setScreen('landing');
+  }, []);
+
+  if (screen === 'landing') {
+    return (
+      <LandingScreen
+        resolution={landingResolution}
+        hasAutosave={hasAutosave}
+        onResolutionChange={setLandingResolution}
+        onCreateProject={handleCreateProject}
+        onLoadProject={openEditorWithProject}
+        onLoadAutosave={handleLoadAutosave}
+      />
+    );
+  }
 
   return (
     <div className={styles.app}>
@@ -70,16 +133,21 @@ export default function App() {
         onConfirm={handleConfirmPieceSwitch}
       />
 
+      <ConfirmDialog
+        isOpen={pendingBackToLanding}
+        title="Unsaved progress"
+        description="You have edits since the last manual save/export. Go back to landing anyway?"
+        cancelLabel="Stay"
+        confirmLabel="Leave"
+        onCancel={() => setPendingBackToLanding(false)}
+        onConfirm={goToLanding}
+      />
+
       <Toolbar
         state={state}
         canUndo={canUndo}
         canRedo={canRedo}
         hasPieceVoxels={hasPieceVoxels}
-        onSetResolution={(resolution) => {
-          dispatch({ type: 'SET_RESOLUTION', resolution });
-          setPieceCameraView('perspective');
-          setModelCameraView('perspective');
-        }}
         onSetTool={(tool: EditorTool) => dispatch({ type: 'SET_TOOL', tool })}
         onSetCameraMode={(mode: CameraMode) => {
           dispatch({ type: 'SET_CAMERA_MODE', mode });
@@ -91,22 +159,28 @@ export default function App() {
             setModelCameraView('isometric');
           }
         }}
-        onImportProject={(project) => {
-          dispatch({ type: 'LOAD_PROJECT', state: project });
-          const importedView = project.cameraMode === 'isometric' ? 'isometric' : (project.cameraView || 'perspective');
-          setPieceCameraView(importedView === 'isometric' ? 'perspective' : importedView);
-          setModelCameraView(importedView);
-        }}
-        onNewProject={() => {
-          dispatch({ type: 'NEW_PROJECT' });
-          setPieceCameraView('perspective');
-          setModelCameraView('perspective');
-        }}
         onNewPiece={() => dispatch({ type: 'CANCEL_EDITING' })}
-        onPushOrFinishPiece={() => dispatch({ type: finishPieceAction })}
+        onPushOrFinishPiece={() => {
+          dispatch({ type: finishPieceAction });
+          setHasUnsavedManualChanges(true);
+        }}
         onCancelEditing={() => dispatch({ type: 'CANCEL_EDITING' })}
-        onUndo={() => dispatch({ type: 'UNDO' })}
-        onRedo={() => dispatch({ type: 'REDO' })}
+        onUndo={() => {
+          dispatch({ type: 'UNDO' });
+          setHasUnsavedManualChanges(true);
+        }}
+        onRedo={() => {
+          dispatch({ type: 'REDO' });
+          setHasUnsavedManualChanges(true);
+        }}
+        onBackToLanding={() => {
+          if (hasUnsavedManualChanges) {
+            setPendingBackToLanding(true);
+            return;
+          }
+          goToLanding();
+        }}
+        onManualCheckpoint={() => setHasUnsavedManualChanges(false)}
       />
 
       <div className={styles.content}>
@@ -173,8 +247,14 @@ export default function App() {
               resolution={state.resolution}
               editingPieceId={state.editingPieceId}
               onSelectPiece={handleLoadPiece}
-              onRenamePiece={(pieceId, name) => dispatch({ type: 'RENAME_PIECE', pieceId, name })}
-              onDeletePiece={(pieceId) => dispatch({ type: 'DELETE_PIECE', pieceId })}
+              onRenamePiece={(pieceId, name) => {
+                dispatch({ type: 'RENAME_PIECE', pieceId, name });
+                setHasUnsavedManualChanges(true);
+              }}
+              onDeletePiece={(pieceId) => {
+                dispatch({ type: 'DELETE_PIECE', pieceId });
+                setHasUnsavedManualChanges(true);
+              }}
             />
           </div>
 

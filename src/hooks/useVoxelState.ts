@@ -1,39 +1,11 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { Dispatch } from 'react';
-import { createEmptyVoxels } from '../domain/voxel/model';
 import { reducer, getInitialState, DEFAULT_RESOLUTION } from '../features/editor/state/editorReducer';
-import { loadStateFromStorage, saveStateToStorage } from '../features/editor/state/persistence';
-import type { EditorAction, EditorState, SerializedProject } from '../features/editor/state/types';
-
-function reviveStoredState(saved: SerializedProject | null): EditorState {
-  if (!saved || !saved.resolution) return getInitialState(DEFAULT_RESOLUTION);
-  const resolution = saved.resolution;
-  const safe = getInitialState(resolution);
-  const cameraMode = saved.cameraMode || safe.cameraMode;
-  return {
-    ...safe,
-    ...saved,
-    frontGrid: new Uint8Array(saved.frontGrid || safe.frontGrid),
-    sideGrid: new Uint8Array(saved.sideGrid || safe.sideGrid),
-    topGrid: new Uint8Array(saved.topGrid || safe.topGrid),
-    pieceVoxels: createEmptyVoxels(resolution),
-    pieces: (saved.pieces || []).map((piece) => ({
-      ...piece,
-      voxels: new Uint8Array(piece.voxels),
-    })),
-    modelVoxels: new Uint8Array(saved.modelVoxels || safe.modelVoxels),
-    modelColors: new Uint8Array(saved.modelColors || safe.modelColors),
-    history: [],
-    historyIndex: -1,
-    editingPieceId: null,
-    cameraMode,
-    cameraView: cameraMode === 'isometric' ? 'isometric' : 'perspective',
-    pieceCount: saved.pieces?.length || 0,
-  };
-}
+import { saveStateToStorage } from '../features/editor/state/persistence';
+import type { EditorAction } from '../features/editor/state/types';
 
 export function useVoxelState() {
-  const [state, dispatch] = useReducer(reducer, undefined, () => reviveStoredState(loadStateFromStorage()));
+  const [state, dispatch] = useReducer(reducer, getInitialState(DEFAULT_RESOLUTION));
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
