@@ -73,6 +73,7 @@ export type EditorAction =
   | { type: 'SET_PALETTE_COLOR'; colorIndex: number; color: string }
   | { type: 'SET_CAMERA_MODE'; mode: CameraMode }
   | { type: 'SET_CAMERA_VIEW'; view: CameraView }
+  | { type: 'COPY_FRONT_TO_SIDE' }
   | { type: 'UNDO' }
   | { type: 'REDO' }
   | { type: 'LOAD_PROJECT'; state: SerializedProject }

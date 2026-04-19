@@ -21,6 +21,7 @@ interface Props {
   onSaveProject: () => void;
   onExportGlb: () => void;
   onOpenShortcuts: () => void;
+  onCopyFrontToSide: () => void;
   hasUnsavedChanges: boolean;
   isSavingProject: boolean;
   isExportingGlb: boolean;
@@ -42,6 +43,7 @@ export default function Toolbar({
   onSaveProject,
   onExportGlb,
   onOpenShortcuts,
+  onCopyFrontToSide,
   hasUnsavedChanges,
   isSavingProject,
   isExportingGlb
@@ -107,6 +109,9 @@ export default function Toolbar({
         </Button>
         <Button isActive={state.tool === 'fillErase'} onPress={handleSetFillEraseTool}>
           {actionLabel('Fill Erase', HOTKEYS.fillEraseTool)}
+        </Button>
+        <Button isDisabled={!state.frontGrid.some(Boolean)} onPress={onCopyFrontToSide}>
+          Front → Side
         </Button>
       </div>
 
