@@ -281,6 +281,10 @@ export default function App() {
     runAction({ type: 'CANCEL_EDITING' });
   }, [runAction]);
 
+  const handleCopyFrontToSide = useCallback(() => {
+    runAction({ type: 'COPY_FRONT_TO_SIDE' }, true);
+  }, [runAction]);
+
   const handleUndo = useCallback(() => {
     runAction({ type: 'UNDO' }, true);
   }, [runAction]);
@@ -609,6 +613,7 @@ export default function App() {
           onSaveProject={handleSaveProject}
           onExportGlb={handleExportGlb}
           onOpenShortcuts={handleOpenHotkeys}
+          onCopyFrontToSide={handleCopyFrontToSide}
           hasUnsavedChanges={hasUnsavedManualChanges}
           isSavingProject={isSavingProject}
           isExportingGlb={isExportingGlb}

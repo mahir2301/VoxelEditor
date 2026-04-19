@@ -396,6 +396,11 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
       return { ...state, cameraView: action.view };
     }
 
+    case 'COPY_FRONT_TO_SIDE': {
+      const nextGrid = new Uint8Array(state.frontGrid);
+      return updateState(state, withRecomputedPiece(state, 'sideGrid', nextGrid), true);
+    }
+
     case 'UNDO': {
       if (state.historyIndex <= 0) {
         return state;
