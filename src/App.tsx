@@ -21,25 +21,6 @@ import { useVoxelState } from './hooks/useVoxelState';
 import { exportModelAsGLB, exportProject, serializeState } from './utils/exportGLB';
 import styles from './App.module.css';
 
-function getToolHint(tool: EditorTool): string {
-  if (tool === 'paint') {
-    return 'Click model voxels to paint.';
-  }
-  if (tool === 'paintFill') {
-    return 'Click model voxels to fill connected colors.';
-  }
-  if (tool === 'fill') {
-    return 'Click a grid cell to flood fill draft voxels.';
-  }
-  if (tool === 'fillErase') {
-    return 'Click a grid cell to flood erase draft voxels.';
-  }
-  if (tool === 'erase') {
-    return 'Click and drag in grids to erase.';
-  }
-  return 'Click and drag in grids to draw.';
-}
-
 export default function App() {
   const { state, dispatch, canUndo, canRedo, effectiveModelVoxels, editingPieceVoxels } =
     useVoxelState();
@@ -537,7 +518,6 @@ export default function App() {
               onColorSelect={handleColorSelect}
               onColorChange={handlePaletteColorChange}
             />
-            <div className={styles.hint}>{getToolHint(state.tool)}</div>
           </div>
 
           <div className={styles.rightBottom}>
