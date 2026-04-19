@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import type { SerializedProject } from '../features/editor/state/types';
-import { importProject } from '../utils/exportGLB';
 import Button from './ui/Button';
 import ConfirmDialog from './ui/ConfirmDialog';
 import SelectField from './ui/SelectField';
@@ -74,6 +73,7 @@ export default function LandingScreen({
         return;
       }
       try {
+        const { importProject } = await import('../utils/exportGLB');
         const project = await importProject(file);
         onLoadProject(project);
       } catch (error) {
