@@ -34,6 +34,7 @@ export default function App() {
   const [modelCameraView, setModelCameraView] = useState<CameraView>(() =>
     state.cameraMode === 'isometric' ? 'isometric' : state.cameraView
   );
+  const [cameraViewResetToken, setCameraViewResetToken] = useState(0);
 
   const hasPieceVoxels = useMemo(() => state.pieceVoxels.some(Boolean), [state.pieceVoxels]);
   const previewPieceOverlayVoxels =
@@ -63,6 +64,7 @@ export default function App() {
       runAction({ type: 'SET_CAMERA_VIEW', view });
       setPieceCameraView(view);
       setModelCameraView(view);
+      setCameraViewResetToken((value) => value + 1);
     },
     [runAction]
   );
@@ -494,6 +496,7 @@ export default function App() {
               resolution={state.resolution}
               cameraMode={state.cameraMode}
               cameraView={pieceCameraView}
+              viewResetToken={cameraViewResetToken}
               onCameraViewChange={setPieceCameraView}
             />
           </div>
@@ -530,6 +533,7 @@ export default function App() {
               resolution={state.resolution}
               cameraMode={state.cameraMode}
               cameraView={modelCameraView}
+              viewResetToken={cameraViewResetToken}
               onVoxelClick={handleVoxelClick}
               onCameraViewChange={setModelCameraView}
             />
