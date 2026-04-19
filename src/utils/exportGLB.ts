@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { parseSerializedProject } from '../features/editor/state/projectSchema';
+import { parseSerializedProjectOrThrow } from '../features/editor/state/projectSchema';
 import type { EditorState, SerializedProject } from '../features/editor/state/types';
 
 /**
@@ -216,16 +216,17 @@ export async function importProject(file: File): Promise<SerializedProject> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      const text = typeof e.target?.result === 'string' ? e.target.result : '';
       try {
-        const text = typeof e.target?.result === 'string' ? e.target.result : '';
-        const parsed = parseSerializedProject(JSON.parse(text));
-        if (!parsed) {
-          reject(new Error('Invalid project file'));
+        const raw = JSON.parse(text);
+        resolve(parseSerializedProjectOrThrow(raw));
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          reject(new Error(`Invalid JSON: ${error.message}`));
           return;
         }
-        resolve(parsed);
-      } catch (error) {
-        reject(error);
+        const message = error instanceof Error ? error.message : 'Unknown import error';
+        reject(new Error(message));
       }
     };
     reader.onerror = () => reject(reader.error);
