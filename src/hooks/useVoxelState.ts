@@ -1,54 +1,89 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react';
-import {
-  DEFAULT_RESOLUTION,
-  getInitialState,
-  reducer
-} from '../features/editor/state/editorReducer';
+import { useEffect, useMemo, useReducer, useState } from 'react';
+import { computePieceVoxels } from '../domain/voxel/model';
+import { getInitialState, reducer } from '../features/editor/state/editorReducer';
 import { saveStateToStorage } from '../features/editor/state/persistence';
-
-export function useVoxelState() {
-  const [state, dispatch] = useReducer(reducer, getInitialState(DEFAULT_RESOLUTION));
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+export function useVoxelState(active: boolean) {
+  const [state, dispatch] = useReducer(reducer, undefined, () => getInitialState());
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const {
+    version,
+    name,
+    resolution,
+    voxelsPerUnit,
+    parts,
+    pieces,
+    palette,
+    frontGrid,
+    sideGrid,
+    topGrid,
+    editingPieceId,
+    draftPartId
+  } = state;
+  const document = useMemo(
+    () => ({
+      version,
+      name,
+      resolution,
+      voxelsPerUnit,
+      parts,
+      pieces,
+      palette,
+      frontGrid,
+      sideGrid,
+      topGrid,
+      editingPieceId,
+      draftPartId
+    }),
+    [
+      version,
+      name,
+      resolution,
+      voxelsPerUnit,
+      parts,
+      pieces,
+      palette,
+      frontGrid,
+      sideGrid,
+      topGrid,
+      editingPieceId,
+      draftPartId
+    ]
+  );
   useEffect(() => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
-    saveTimerRef.current = setTimeout(() => {
-      saveStateToStorage(state);
+    if (!active || state.transaction) return undefined;
+    const timer = setTimeout(() => {
+      try {
+        saveStateToStorage(document);
+        setAutosaveError(null);
+      } catch {
+        setAutosaveError('Autosave unavailable. Save a project file to keep your work.');
+      }
     }, 300);
-
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
+    return () => clearTimeout(timer);
+  }, [active, document, state.transaction]);
+  useEffect(() => {
+    if (!active) return undefined;
+    const save = () => {
+      try {
+        saveStateToStorage(document);
+      } catch {
+        /* Manual save remains available. */
       }
     };
-  }, [state]);
-
-  const effectiveModelVoxels = useMemo(() => {
-    if (!state.editingPieceId) {
-      return state.modelVoxels;
-    }
-    const overlay = new Uint8Array(state.modelVoxels);
-    for (let i = 0; i < state.pieceVoxels.length; i += 1) {
-      if (state.pieceVoxels[i]) {
-        overlay[i] = 1;
-      }
-    }
-    return overlay;
-  }, [state.editingPieceId, state.modelVoxels, state.pieceVoxels]);
-
-  const editingPieceVoxels = useMemo(
-    () => (state.editingPieceId ? state.pieceVoxels : null),
-    [state.editingPieceId, state.pieceVoxels]
+    window.addEventListener('pagehide', save);
+    return () => window.removeEventListener('pagehide', save);
+  }, [active, document]);
+  const pieceVoxels = useMemo(
+    () => computePieceVoxels(state.frontGrid, state.sideGrid, state.topGrid, state.resolution),
+    [state.frontGrid, state.sideGrid, state.topGrid, state.resolution]
   );
-
   return {
-    canRedo: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
-    canUndo: state.historyIndex > 0,
+    state,
     dispatch,
-    editingPieceVoxels,
-    effectiveModelVoxels,
-    state
+    document,
+    pieceVoxels,
+    autosaveError,
+    canUndo: state.historyIndex > 0,
+    canRedo: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1
   };
 }

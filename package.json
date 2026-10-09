@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint --fix",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "test": "node scripts/run-tests.mjs",
+    "typecheck": "tsc --noEmit",
+    "examples": "node scripts/export-examples.mjs"
   },
   "dependencies": {
     "@react-three/drei": "10.7.7",
@@ -20,13 +23,16 @@
     "three": "0.184.0"
   },
   "devDependencies": {
+    "@rolldown/plugin-babel": "0.2.4",
+    "@types/node": "26.6.4",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
-    "oxfmt": "0.45.0",
+    "babel-plugin-react-compiler": "1.0.0",
+    "oxfmt": "0.72.0",
     "oxlint": "1.60.0",
     "oxlint-tsgolint": "0.21.1",
     "typescript": "6.0.3",
-    "vite": "8.0.8"
+    "vite": "8.3.4"
   }
 }

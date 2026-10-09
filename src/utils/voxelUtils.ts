@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, Color } from 'three';
-import { DEFAULT_PALETTE, computeModelFromPieces, computePieceVoxels } from '../domain/voxel/model';
+import { DEFAULT_PALETTE, computePieceVoxels } from '../domain/voxel/model';
 import type { Piece } from '../features/editor/state/types';
 
 type VoxelTuple = readonly [number, number, number];
@@ -106,6 +106,7 @@ export function buildVoxelGeometry(
   const positions = new Float32Array(vertexCount * 3);
   const colorAttr = new Float32Array(vertexCount * 3);
   const indices = new Uint32Array(visibleFaces * 6);
+  const triangleVoxels = new Uint32Array(visibleFaces * 2);
 
   let positionCursor = 0;
   let colorCursor = 0;
@@ -154,6 +155,8 @@ export function buildVoxelGeometry(
         colorCursor += 3;
       }
 
+      triangleVoxels[indexCursor / 3] = i;
+      triangleVoxels[indexCursor / 3 + 1] = i;
       indices[indexCursor] = baseVertex;
       indices[indexCursor + 1] = baseVertex + 1;
       indices[indexCursor + 2] = baseVertex + 2;
@@ -170,39 +173,9 @@ export function buildVoxelGeometry(
   geometry.setAttribute('color', new BufferAttribute(colorAttr, 3));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeVertexNormals();
+  geometry.userData.triangleVoxels = triangleVoxels;
   return geometry;
 }
 
-export function getVoxelIndexFromHit(
-  faceIndex: number,
-  voxels: Uint8Array,
-  resolution: number
-): number {
-  const planeSize = resolution * resolution;
-  let triangleCursor = 0;
-  for (let i = 0; i < voxels.length; i += 1) {
-    if (!voxels[i]) {
-      continue;
-    }
-
-    const x = i % resolution;
-    const y = Math.floor(i / resolution) % resolution;
-    const z = Math.floor(i / planeSize);
-    let visibleFaces = 0;
-    for (let visibleFaceIndex = 0; visibleFaceIndex < FACE_DATA.length; visibleFaceIndex += 1) {
-      const dir = FACE_DATA[visibleFaceIndex].dir;
-      if (!hasNeighbor(voxels, x + dir[0], y + dir[1], z + dir[2], resolution)) {
-        visibleFaces += 1;
-      }
-    }
-    const voxelTriangles = visibleFaces * 2;
-    if (faceIndex >= triangleCursor && faceIndex < triangleCursor + voxelTriangles) {
-      return i;
-    }
-    triangleCursor += voxelTriangles;
-  }
-  return -1;
-}
-
-export { computePieceVoxels, computeModelFromPieces, DEFAULT_PALETTE };
+export { computePieceVoxels, DEFAULT_PALETTE };
 export type { Piece };

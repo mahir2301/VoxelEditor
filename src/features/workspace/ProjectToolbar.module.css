@@ -1,0 +1,51 @@
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 15px 20px;
+  background: #0e1914;
+  border-bottom: 1px solid #30413b;
+}
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.mark {
+  color: #87d3a7;
+  font-size: 32px;
+}
+.brand div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.brand strong {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.brand span:last-child {
+  color: #8da998;
+  font-size: 11px;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.divider {
+  height: 22px;
+  border-left: 1px solid #30413b;
+  margin: 0 5px;
+}
+@media (max-width: 1000px) {
+  .toolbar {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .actions {
+    gap: 4px;
+  }
+}

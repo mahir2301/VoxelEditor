@@ -1,74 +1,23 @@
-# AGENTS
+# Project instructions
 
-## Fast Start
+Start with README.md for the implemented workflow and architecture. Keep documentation aligned with code. Use Conventional Commits for coherent completed changes.
 
-- Stack: Vite + React + TypeScript, npm lockfile at `package-lock.json`.
-- Commands: `npm run dev`, `npm run format`, `npm run lint`, `npm run build`.
-- Baseline verification is `format + lint` (no dedicated test script).
+## Stack and verification
 
-## Real Source Of Truth
+Vite 8, React 19 with React Compiler, TypeScript, Three.js, React Three Fiber/Drei, React Aria and ArkType. Use npm/package-lock.json. Run format, lint, typecheck, test and build for behavioral changes. Document checks that cannot run.
 
-- Treat code/config as authoritative. `README.md` is still template-level and stale.
+## State ownership
 
-## Application Flow
+`features/editor/state/types.ts` owns version 3 document/action types. The orchestration reducer delegates projection edits to draftReducer and assembly changes to assemblyReducer. History owns explicit document snapshots, capped at 200. BEGIN/END/CANCEL_TRANSACTION groups strokes/drags. Never mutate shared buffers; copy edited occupancy/colors. UI state must not enter snapshots or exports. Persistence keeps the existing autosave key with a 300 ms debounce; hydration validates external JSON before converting arrays.
 
-- Entry: `src/main.tsx` renders `src/App.tsx`.
-- `App.tsx` controls top-level mode split:
-  - `landing`: project bootstrap only
-  - `editor`: voxel editing workspace
-- Landing responsibilities live in `src/components/LandingScreen.tsx`:
-  - create by resolution
-  - load `.voxproj`/`.json`
-  - load autosave
+Schema/migrations live in projectSchema/legacySchema. Keep version 1/2 migration coverage and reject future versions. Every piece owns local geometry/colors and one part. Part parents must be real parts, never sockets; reject cycles/duplicate IDs/missing parents. Reparent/pivot operations preserve world poses through assembly math. Export names derive from stable IDs, never display names.
 
-## State Architecture
+## Geometry and export
 
-- Types: `src/features/editor/state/types.ts`
-- Reducer + lifecycle actions: `src/features/editor/state/editorReducer.ts`
-- History snapshots: `src/features/editor/state/history.ts`
-- Persistence/autosave: `src/features/editor/state/persistence.ts`
-- Parse boundary validation (ArkType): `src/features/editor/state/projectSchema.ts`
-- Hook glue and derived state: `src/hooks/useVoxelState.ts`
+Projection semantics remain front +Z, side +X (including its Z flip), top +Y; occupancy is their three-way intersection. Geometry/export share utils/voxelUtils.ts and outward CCW glTF winding. Retain faces between moving pieces. Dispose owned geometries and exported temporary resources. Use cached triangle-to-voxel ownership for painting.
 
-## Core Domain/Rendering
+`features/export` owns assembly scene, sidecar paths and downloads; binary GLTFExporter stays lazy. Export rest poses, world units, hierarchy and sockets; never export UI markers or temporary preview transforms. Game presentation contracts are owned by the sibling voxel-td docs/technical/18-assets-and-tooling.md; authoritative gameplay stays outside editor/model metadata.
 
-- Projection + voxel math: `src/domain/voxel/model.ts`
-- Runtime mesh generation + hit mapping: `src/utils/voxelUtils.ts`
-- GLB export + project import/export: `src/utils/exportGLB.ts`
+## UI
 
-## Non-Negotiable Behavior
-
-- Projection semantics must remain:
-  - front = `+Z`
-  - side = `+X`
-  - top = `+Y`
-- Piece voxels are the 3-way intersection of front/side/top grids.
-- Side-view 2D mapping keeps the Z flip for visual consistency.
-
-## Undo/Redo And Persistence Rules
-
-- History is snapshot-based, capped at `MAX_HISTORY = 200`.
-- Any model-affecting mutation must call `updateState(..., true)`.
-- UI-only toggles (`SET_TOOL`, camera view/mode, color slot select) stay out of history.
-- Autosave is debounced (300ms) to localStorage key `voxel-editor-autosave`.
-
-## Performance Hotspots (Edit Carefully)
-
-- `buildVoxelGeometry` and GLB geometry builders are hot loops.
-  - avoid per-voxel object allocations
-  - prefer cached palette RGB values
-- Grid rendering in `Grid2D.tsx` is canvas-based and redraws often; avoid extra allocations in pointer paths.
-- `Viewport3D.tsx` and `App.tsx` are high-churn; keep prop identity stable with memoized callbacks.
-
-## UI Composition Rules
-
-- Use React Aria wrappers from `src/components/ui/*` for controls.
-- Styling uses CSS Modules (`*.module.css`); keep `src/index.css` global-only.
-- Color editing is via React Aria `ColorPicker` composition in `src/components/ColorPalette.tsx`.
-- Toolbar scope is in-editor actions only (`save/export/back`, tools, camera, history, piece actions).
-
-## Serialization Boundaries
-
-- Runtime state uses `Uint8Array`; serialized project shape uses number arrays.
-- Validate external JSON through `parseSerializedProject(...)` before hydration.
-- GLB export intentionally uses flipped face winding for Unity compatibility.
+Use React Aria wrappers in components/ui and CSS Modules. Workspace panels and viewport collaborators each own a focused responsibility. Preserve native input focus: shortcuts must not hijack text fields/dialogs. React Compiler manages routine JSX memoization; use explicit memoization where it expresses owned expensive geometry/cache lifetimes. Hide/lock/isolation/selection and preview are transient UI state.

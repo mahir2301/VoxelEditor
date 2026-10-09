@@ -1,0 +1,51 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #99aaa9;
+  min-width: 0;
+}
+.field input,
+.select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #344442;
+  border-radius: 6px;
+  background: #172321;
+  color: #e6efed;
+  padding: 6px 8px;
+}
+.select {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+.popover {
+  background: #1c2b28;
+  color: #e6efed;
+  border: 1px solid #40534d;
+  border-radius: 8px;
+  padding: 5px;
+  min-width: var(--trigger-width);
+  max-height: 320px;
+  overflow: auto;
+  z-index: 10;
+}
+.option {
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+.option[data-focused],
+.option[data-selected] {
+  background: #315449;
+}
+.field input:focus-visible,
+.select:focus-visible {
+  outline: 2px solid #83d2ad;
+  outline-offset: 1px;
+}

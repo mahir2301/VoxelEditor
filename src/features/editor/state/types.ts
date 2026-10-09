@@ -10,91 +10,112 @@ export type CameraView =
   | 'isometric'
   | 'perspective';
 export type GridName = 'front' | 'side' | 'top';
-
+export type Vector = [number, number, number];
+export interface Transform {
+  position: Vector;
+  rotation: Vector;
+}
+export type MotionKind = 'none' | 'yaw' | 'pitch' | 'recoil' | 'spin';
+export type SocketRole = 'None' | 'ProjectileOrigin' | 'EnergyConnector' | 'HealthbarAnchor';
+export interface Motion {
+  kind: MotionKind;
+  axis: 'x' | 'y' | 'z';
+  min: number;
+  max: number;
+  distance: number;
+  duration: number;
+  speed: number;
+}
+export interface Part {
+  id: string;
+  name: string;
+  parentId: string | null;
+  kind: 'part' | 'socket';
+  transform: Transform;
+  motion: Motion;
+  role: SocketRole;
+  energy: boolean;
+  exportEnabled: boolean;
+}
 export interface Piece {
   id: string;
   name: string;
+  partId: string;
+  transform: Transform;
   voxels: Uint8Array;
+  colors: Uint8Array;
+  exportEnabled: boolean;
 }
-
-export interface EditorSnapshot {
+export interface ProjectDocument {
+  version: 3;
+  name: string;
   resolution: number;
-  frontGrid: Uint8Array;
-  sideGrid: Uint8Array;
-  topGrid: Uint8Array;
-  pieceVoxels: Uint8Array;
+  voxelsPerUnit: number;
+  parts: Part[];
   pieces: Piece[];
-  editingPieceId: string | null;
-  modelVoxels: Uint8Array;
-  modelColors: Uint8Array;
   palette: string[];
-  selectedColor: number;
-  tool: EditorTool;
-  cameraMode: CameraMode;
-  cameraView: CameraView;
-  pieceCount: number;
-}
-
-export interface EditorState {
-  version: number;
-  resolution: number;
   frontGrid: Uint8Array;
   sideGrid: Uint8Array;
   topGrid: Uint8Array;
-  pieceVoxels: Uint8Array;
-  pieces: Piece[];
   editingPieceId: string | null;
-  modelVoxels: Uint8Array;
-  modelColors: Uint8Array;
+  draftPartId: string;
+}
+export interface EditorSnapshot extends ProjectDocument {}
+export interface EditorState extends ProjectDocument {
   history: EditorSnapshot[];
   historyIndex: number;
-  palette: string[];
-  selectedColor: number;
+  transaction: EditorSnapshot | null;
   tool: EditorTool;
+  selectedColor: number;
   cameraMode: CameraMode;
   cameraView: CameraView;
-  pieceCount: number;
 }
-
+export interface SerializedPiece extends Omit<Piece, 'voxels' | 'colors'> {
+  voxels: number[];
+  colors: number[];
+}
+export interface SerializedProject extends Omit<
+  ProjectDocument,
+  'pieces' | 'frontGrid' | 'sideGrid' | 'topGrid'
+> {
+  pieces: SerializedPiece[];
+  frontGrid: number[];
+  sideGrid: number[];
+  topGrid: number[];
+}
 export type EditorAction =
-  | { type: 'SET_RESOLUTION'; resolution: number }
-  | { type: 'SET_CELL'; grid: GridName; index: number; value: number }
-  | { type: 'FILL_CELL'; grid: GridName; index: number; value: number }
-  | { type: 'LOAD_PIECE_FOR_EDITING'; pieceId: string }
-  | { type: 'PUSH_PIECE' }
-  | { type: 'FINISH_EDITING' }
-  | { type: 'CANCEL_EDITING' }
+  | { type: 'SET_CELL' | 'FILL_CELL'; grid: GridName; index: number; value: number }
+  | { type: 'LOAD_PIECE_FOR_EDITING' | 'DELETE_PIECE'; pieceId: string }
   | { type: 'RENAME_PIECE'; pieceId: string; name: string }
-  | { type: 'DELETE_PIECE'; pieceId: string }
-  | { type: 'PAINT_VOXEL'; index: number; colorIndex: number }
-  | { type: 'FILL_PAINT_VOXEL'; index: number; colorIndex: number }
+  | {
+      type:
+        | 'PUSH_PIECE'
+        | 'FINISH_EDITING'
+        | 'CANCEL_EDITING'
+        | 'COPY_FRONT_TO_SIDE'
+        | 'UNDO'
+        | 'REDO'
+        | 'BEGIN_TRANSACTION'
+        | 'END_TRANSACTION'
+        | 'CANCEL_TRANSACTION';
+    }
+  | { type: 'PAINT_VOXEL' | 'FILL_PAINT_VOXEL'; pieceId: string; index: number; colorIndex: number }
   | { type: 'SET_TOOL'; tool: EditorTool }
   | { type: 'SET_COLOR'; colorIndex: number }
   | { type: 'SET_PALETTE_COLOR'; colorIndex: number; color: string }
   | { type: 'SET_CAMERA_MODE'; mode: CameraMode }
   | { type: 'SET_CAMERA_VIEW'; view: CameraView }
-  | { type: 'COPY_FRONT_TO_SIDE' }
-  | { type: 'UNDO' }
-  | { type: 'REDO' }
   | { type: 'LOAD_PROJECT'; state: SerializedProject }
-  | { type: 'NEW_PROJECT' };
-
-export interface SerializedPiece {
-  id: string;
-  name: string;
-  voxels: number[];
-}
-
-export interface SerializedProject {
-  version: number;
-  resolution: number;
-  frontGrid: number[];
-  sideGrid: number[];
-  topGrid: number[];
-  pieces: SerializedPiece[];
-  modelVoxels: number[];
-  modelColors: number[];
-  palette: string[];
-  cameraMode?: CameraMode;
-  cameraView?: CameraView;
-}
+  | { type: 'NEW_PROJECT'; resolution: number }
+  | { type: 'SET_PROJECT'; name?: string; voxelsPerUnit?: number }
+  | { type: 'SET_DRAFT_PART'; partId: string }
+  | { type: 'ADD_PART'; part: Part }
+  | {
+      type: 'UPDATE_PART';
+      partId: string;
+      changes: Partial<Pick<Part, 'name' | 'motion' | 'role' | 'energy' | 'exportEnabled'>>;
+    }
+  | { type: 'TRANSFORM'; id: string; transform: Transform; pivot?: boolean }
+  | { type: 'SET_EXPORT'; id: string; enabled: boolean }
+  | { type: 'REPARENT'; id: string; parentId: string | null }
+  | { type: 'DELETE_NODE' | 'DUPLICATE_NODE'; id: string };

@@ -1,5 +1,3 @@
-import type { Piece } from '../../features/editor/state/types';
-
 export const DEFAULT_PALETTE = [
   '#808080',
   '#ff4444',
@@ -90,40 +88,4 @@ export function reconstructGridsFromPiece(
   }
 
   return { frontGrid, sideGrid, topGrid };
-}
-
-export function computeModelFromPieces(pieces: Piece[], resolution: number): Uint8Array {
-  const modelVoxels = createEmptyVoxels(resolution);
-  for (const piece of pieces) {
-    for (let i = 0; i < modelVoxels.length; i += 1) {
-      if (piece.voxels[i]) {
-        modelVoxels[i] = 1;
-      }
-    }
-  }
-  return modelVoxels;
-}
-
-export function applyPieceToModel(
-  modelVoxels: Uint8Array,
-  modelColors: Uint8Array,
-  pieceVoxels: Uint8Array,
-  colorIndex = 0
-): { modelVoxels: Uint8Array; modelColors: Uint8Array } {
-  const nextModelVoxels = new Uint8Array(modelVoxels);
-  const nextModelColors = new Uint8Array(modelColors);
-
-  for (let i = 0; i < pieceVoxels.length; i += 1) {
-    if (!pieceVoxels[i] || nextModelVoxels[i]) {
-      continue;
-    }
-    nextModelVoxels[i] = 1;
-    nextModelColors[i] = colorIndex;
-  }
-
-  return { modelColors: nextModelColors, modelVoxels: nextModelVoxels };
-}
-
-export function createPieceId(): string {
-  return `piece-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

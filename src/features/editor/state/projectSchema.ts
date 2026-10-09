@@ -1,187 +1,201 @@
 import { type } from 'arktype';
+import { newPart } from '../../../domain/assembly/model';
+import { identityTransform } from '../../../domain/assembly/transforms';
+import { parseLegacyProjectOrThrow } from './legacySchema';
 import type { SerializedProject } from './types';
-
-const SerializedPieceSchema = type({
+const vector = type(['number', 'number', 'number']);
+const transform = type({ position: vector, rotation: vector });
+const motion = type({
+  kind: "'none' | 'yaw' | 'pitch' | 'recoil' | 'spin'",
+  axis: "'x' | 'y' | 'z'",
+  min: 'number',
+  max: 'number',
+  distance: 'number',
+  duration: 'number',
+  speed: 'number'
+});
+const part = type({
   id: 'string',
   name: 'string',
-  voxels: 'number[]'
+  parentId: 'string | null',
+  kind: "'part' | 'socket'",
+  transform,
+  motion,
+  role: "'None' | 'ProjectileOrigin' | 'EnergyConnector' | 'HealthbarAnchor'",
+  energy: 'boolean',
+  exportEnabled: 'boolean'
 });
-
-const SerializedProjectSchema = type({
-  version: 'number',
+const piece = type({
+  id: 'string',
+  name: 'string',
+  partId: 'string',
+  transform,
+  voxels: 'number[]',
+  colors: 'number[]',
+  exportEnabled: 'boolean'
+});
+const schema = type({
+  version: '3',
+  name: 'string',
   resolution: 'number',
+  voxelsPerUnit: 'number',
+  parts: part.array(),
+  pieces: piece.array(),
+  palette: 'string[]',
   frontGrid: 'number[]',
   sideGrid: 'number[]',
   topGrid: 'number[]',
-  pieces: SerializedPieceSchema.array(),
-  modelVoxels: 'number[]',
-  modelColors: 'number[]',
-  palette: 'string[]',
-  'cameraMode?': "'perspective' | 'isometric'",
-  'cameraView?':
-    "'front' | 'back' | 'right' | 'left' | 'top' | 'bottom' | 'isometric' | 'perspective'"
+  editingPieceId: 'string | null',
+  draftPartId: 'string'
 });
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return 'Invalid project schema';
+function ensure(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(`Project consistency validation failed: ${message}`);
 }
-
-function findFirstNonBinaryIndex(values: number[]): number {
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
-    if (value !== 0 && value !== 1) {
-      return index;
+export function validateProject(project: SerializedProject): SerializedProject {
+  const n = project.resolution,
+    count = n ** 3;
+  ensure(Number.isInteger(n) && n >= 1 && n <= 64, 'resolution must be an integer from 1 to 64');
+  ensure(
+    Number.isFinite(project.voxelsPerUnit) &&
+      project.voxelsPerUnit > 0 &&
+      project.voxelsPerUnit <= 1024,
+    'voxelsPerUnit must be positive and at most 1024'
+  );
+  ensure(
+    project.palette.length > 0 &&
+      project.palette.length <= 256 &&
+      project.palette.every((c) => /^#[0-9a-f]{6}$/i.test(c)),
+    'palette must contain 1–256 six-digit hex colors'
+  );
+  ensure(
+    project.parts.length > 0 && project.parts.length <= 256 && project.pieces.length <= 512,
+    'too many parts/pieces or no parts'
+  );
+  const ids = new Set<string>();
+  for (const node of [...project.parts, ...project.pieces]) {
+    ensure(
+      /^[a-zA-Z0-9_-]+$/.test(node.id) && !ids.has(node.id),
+      'node IDs must be unique and contain letters, numbers, underscores or hyphens'
+    );
+    ids.add(node.id);
+    ensure(
+      node.name.trim().length > 0 && node.name.length <= 128,
+      'names must contain 1–128 characters'
+    );
+    ensure(
+      [...node.transform.position, ...node.transform.rotation].every(
+        (v) => Number.isFinite(v) && Math.abs(v) <= 100000
+      ),
+      'invalid transform'
+    );
+  }
+  const parts = new Map(project.parts.map((p) => [p.id, p]));
+  for (const node of project.parts) {
+    const seen = new Set([node.id]);
+    let parentId = node.parentId;
+    while (parentId) {
+      const parent = parts.get(parentId);
+      ensure(
+        parent && parent.kind === 'part' && !seen.has(parentId),
+        'missing parent, socket parent or cyclic hierarchy'
+      );
+      seen.add(parentId);
+      parentId = parent.parentId;
     }
+    ensure(
+      [
+        node.motion.min,
+        node.motion.max,
+        node.motion.distance,
+        node.motion.duration,
+        node.motion.speed
+      ].every(Number.isFinite),
+      'invalid motion values'
+    );
+    ensure(
+      node.motion.min <= node.motion.max &&
+        node.motion.duration >= 0.01 &&
+        node.motion.duration <= 10 &&
+        node.motion.distance >= 0 &&
+        Math.abs(node.motion.speed) <= 3600,
+      'invalid motion limits'
+    );
+    ensure(
+      node.kind !== 'socket' || (node.motion.kind === 'none' && !node.energy),
+      'sockets cannot own motion or energy geometry'
+    );
   }
-  return -1;
+  for (const node of project.pieces) {
+    ensure(parts.get(node.partId)?.kind === 'part', 'piece must belong to a part');
+    ensure(
+      node.voxels.length === count && node.colors.length === count,
+      'piece buffer size does not match resolution'
+    );
+    ensure(
+      node.voxels.every((v) => v === 0 || v === 1),
+      'voxel occupancy must be binary'
+    );
+    ensure(
+      node.colors.every((v) => Number.isInteger(v) && v >= 0 && v < project.palette.length),
+      'piece has invalid palette indices'
+    );
+  }
+  for (const grid of [project.frontGrid, project.sideGrid, project.topGrid])
+    ensure(
+      grid.length === n * n && grid.every((v) => v === 0 || v === 1),
+      'invalid projection grid'
+    );
+  ensure(parts.get(project.draftPartId)?.kind === 'part', 'invalid draft part');
+  ensure(
+    project.editingPieceId === null || project.pieces.some((p) => p.id === project.editingPieceId),
+    'invalid edited piece'
+  );
+  return project;
 }
-
-function validateProjectConsistency(project: SerializedProject): string | null {
-  if (!Number.isInteger(project.resolution) || project.resolution <= 0) {
-    return `resolution must be a positive integer (received ${String(project.resolution)}).`;
-  }
-
-  const gridCellCount = project.resolution * project.resolution;
-  const voxelCellCount = gridCellCount * project.resolution;
-
-  if (project.frontGrid.length !== gridCellCount) {
-    return `frontGrid length must be ${String(gridCellCount)} for resolution ${String(project.resolution)} (received ${String(project.frontGrid.length)}).`;
-  }
-  if (project.sideGrid.length !== gridCellCount) {
-    return `sideGrid length must be ${String(gridCellCount)} for resolution ${String(project.resolution)} (received ${String(project.sideGrid.length)}).`;
-  }
-  if (project.topGrid.length !== gridCellCount) {
-    return `topGrid length must be ${String(gridCellCount)} for resolution ${String(project.resolution)} (received ${String(project.topGrid.length)}).`;
-  }
-  if (project.modelVoxels.length !== voxelCellCount) {
-    return `modelVoxels length must be ${String(voxelCellCount)} for resolution ${String(project.resolution)} (received ${String(project.modelVoxels.length)}).`;
-  }
-  if (project.modelColors.length !== voxelCellCount) {
-    return `modelColors length must be ${String(voxelCellCount)} for resolution ${String(project.resolution)} (received ${String(project.modelColors.length)}).`;
-  }
-
-  const firstInvalidFront = findFirstNonBinaryIndex(project.frontGrid);
-  if (firstInvalidFront >= 0) {
-    return `frontGrid[${String(firstInvalidFront)}] must be 0 or 1.`;
-  }
-  const firstInvalidSide = findFirstNonBinaryIndex(project.sideGrid);
-  if (firstInvalidSide >= 0) {
-    return `sideGrid[${String(firstInvalidSide)}] must be 0 or 1.`;
-  }
-  const firstInvalidTop = findFirstNonBinaryIndex(project.topGrid);
-  if (firstInvalidTop >= 0) {
-    return `topGrid[${String(firstInvalidTop)}] must be 0 or 1.`;
-  }
-  const firstInvalidModelVoxel = findFirstNonBinaryIndex(project.modelVoxels);
-  if (firstInvalidModelVoxel >= 0) {
-    return `modelVoxels[${String(firstInvalidModelVoxel)}] must be 0 or 1.`;
-  }
-
-  if (project.palette.length === 0) {
-    return 'palette must contain at least one color.';
-  }
-
-  for (let colorIndex = 0; colorIndex < project.modelColors.length; colorIndex += 1) {
-    const value = project.modelColors[colorIndex];
-    if (!Number.isInteger(value) || value < 0 || value >= project.palette.length) {
-      return `modelColors[${String(colorIndex)}] must reference a valid palette slot (0-${String(project.palette.length - 1)}).`;
-    }
-  }
-
-  for (let pieceIndex = 0; pieceIndex < project.pieces.length; pieceIndex += 1) {
-    const piece = project.pieces[pieceIndex];
-    if (piece.voxels.length !== voxelCellCount) {
-      return `pieces[${String(pieceIndex)}].voxels length must be ${String(voxelCellCount)} for resolution ${String(project.resolution)} (received ${String(piece.voxels.length)}).`;
-    }
-    const firstInvalidPieceVoxel = findFirstNonBinaryIndex(piece.voxels);
-    if (firstInvalidPieceVoxel >= 0) {
-      return `pieces[${String(pieceIndex)}].voxels[${String(firstInvalidPieceVoxel)}] must be 0 or 1.`;
-    }
-  }
-
-  return null;
+export function parseSerializedProjectOrThrow(raw: unknown): SerializedProject {
+  ensure(raw && typeof raw === 'object', 'project must be an object');
+  const version = Reflect.get(raw, 'version') ?? 1;
+  if (version === 3) return validateProject(schema.assert(raw));
+  ensure(version === 1 || version === 2, `unsupported project version ${String(version)}`);
+  const resolution = Reflect.get(raw, 'resolution') ?? 16;
+  ensure(
+    Number.isInteger(resolution) && resolution > 0 && resolution <= 64,
+    'invalid legacy resolution'
+  );
+  const old = parseLegacyProjectOrThrow(raw),
+    base = newPart('Base');
+  // Union-era projects paint shared coordinates. Copy those colors into every owning piece.
+  const pieces = old.pieces.length
+    ? old.pieces
+    : old.modelVoxels.some(Boolean)
+      ? [{ id: crypto.randomUUID(), name: 'Imported Model', voxels: old.modelVoxels }]
+      : [];
+  return validateProject({
+    version: 3,
+    name: 'tower',
+    resolution: old.resolution,
+    voxelsPerUnit: 16,
+    parts: [base],
+    pieces: pieces.map((p) =>
+      Object.assign({}, p, {
+        partId: base.id,
+        transform: identityTransform(),
+        colors: [...old.modelColors],
+        exportEnabled: true
+      })
+    ),
+    palette: old.palette,
+    frontGrid: old.frontGrid,
+    sideGrid: old.sideGrid,
+    topGrid: old.topGrid,
+    editingPieceId: null,
+    draftPartId: base.id
+  });
 }
-
-function toNumberArray(value: unknown): number[] {
-  if (Array.isArray(value)) {
-    return value.map((entry) => Number(entry) || 0);
-  }
-  if (value && typeof value === 'object') {
-    const recordValues = Object.values(value).map((entry) => Number(entry) || 0);
-    return [...new Uint8Array(recordValues)];
-  }
-  return [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object';
-}
-
-function normalizeProjectShape(raw: unknown): unknown {
-  if (!isRecord(raw)) {
-    return raw;
-  }
-  const data = raw;
-  const piecesRaw = Array.isArray(data.pieces) ? data.pieces : [];
-
-  return {
-    version: typeof data.version === 'number' ? data.version : 1,
-    resolution: typeof data.resolution === 'number' ? data.resolution : 16,
-    frontGrid: toNumberArray(data.frontGrid),
-    sideGrid: toNumberArray(data.sideGrid),
-    topGrid: toNumberArray(data.topGrid),
-    modelVoxels: toNumberArray(data.modelVoxels),
-    modelColors: toNumberArray(data.modelColors),
-    palette: Array.isArray(data.palette)
-      ? data.palette.filter((entry: unknown): entry is string => typeof entry === 'string')
-      : [],
-    cameraMode: data.cameraMode,
-    cameraView: data.cameraView,
-    pieces: piecesRaw.map((piece) => {
-      if (!isRecord(piece)) {
-        return { id: 'piece-imported', name: 'Imported Piece', voxels: [] };
-      }
-      return {
-        id: typeof piece.id === 'string' ? piece.id : 'piece-imported',
-        name: typeof piece.name === 'string' ? piece.name : 'Imported Piece',
-        voxels: toNumberArray(piece.voxels)
-      };
-    })
-  };
-}
-
-export function parseSerializedProject(value: unknown): SerializedProject | null {
+export function parseSerializedProject(raw: unknown): SerializedProject | null {
   try {
-    return parseSerializedProjectOrThrow(value);
+    return parseSerializedProjectOrThrow(raw);
   } catch {
     return null;
   }
-}
-
-export function parseSerializedProjectOrThrow(value: unknown): SerializedProject {
-  let normalized: unknown;
-  try {
-    normalized = normalizeProjectShape(value);
-  } catch (error) {
-    throw new Error(`Unable to normalize project: ${getErrorMessage(error)}`, { cause: error });
-  }
-
-  let parsed: SerializedProject;
-  try {
-    parsed = SerializedProjectSchema.assert(normalized);
-  } catch (error) {
-    throw new Error(`Project schema validation failed: ${getErrorMessage(error)}`, {
-      cause: error
-    });
-  }
-
-  const consistencyError = validateProjectConsistency(parsed);
-  if (consistencyError) {
-    throw new Error(`Project consistency validation failed: ${consistencyError}`);
-  }
-
-  return parsed;
 }

@@ -1,43 +1,20 @@
 import { parseSerializedProject } from './projectSchema';
 import { serializeState } from './serialization';
-import type { EditorState, SerializedProject } from './types';
-
+import type { ProjectDocument, SerializedProject } from './types';
 const STORAGE_KEY = 'voxel-editor-autosave';
-const STORAGE_VERSION = 1;
-
-interface AutosaveEnvelope {
-  version: number;
-  project: SerializedProject;
+export function saveStateToStorage(state: ProjectDocument): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, project: serializeState(state) }));
 }
-
-function isAutosaveEnvelope(value: unknown): value is AutosaveEnvelope {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const version = Reflect.get(value, 'version');
-  const project = Reflect.get(value, 'project');
-  return typeof version === 'number' && project != null;
-}
-
-export function saveStateToStorage(state: EditorState): void {
-  const payload: AutosaveEnvelope = {
-    version: STORAGE_VERSION,
-    project: serializeState(state)
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-}
-
 export function loadStateFromStorage(): SerializedProject | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
   try {
-    const parsed = JSON.parse(raw);
-    if (isAutosaveEnvelope(parsed)) {
-      return parseSerializedProject(parsed.project);
-    }
-    return parseSerializedProject(parsed);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return parseSerializedProject(
+      parsed && typeof parsed === 'object' && Reflect.has(parsed, 'project')
+        ? Reflect.get(parsed, 'project')
+        : parsed
+    );
   } catch {
     return null;
   }

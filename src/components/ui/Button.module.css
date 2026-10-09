@@ -50,3 +50,21 @@
   border-color: #cf6d6d;
   background: linear-gradient(180deg, rgba(132, 47, 47, 0.95), rgba(92, 34, 34, 0.94));
 }
+
+.button {
+  background: #23362c;
+  border-color: #3c5647;
+  color: #dcebe1;
+  border-radius: 6px;
+  min-height: 30px;
+  font-size: 11px;
+}
+.button:hover {
+  background: #304b3b;
+}
+.active,
+.accent {
+  background: #426c51;
+  border-color: #80bf91;
+  color: #eefbf1;
+}

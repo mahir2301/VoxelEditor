@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import type { SerializedProject } from '../features/editor/state/types';
+import { importProject } from '../features/export/projectFiles';
 import Button from './ui/Button';
 import ConfirmDialog from './ui/ConfirmDialog';
 import SelectField from './ui/SelectField';
@@ -75,7 +76,6 @@ export default function LandingScreen({
       }
       setImporting(true);
       try {
-        const { importProject } = await import('../utils/exportGLB');
         const project = await importProject(file);
         onLoadProject(project);
       } catch (error) {
@@ -100,9 +100,9 @@ export default function LandingScreen({
       />
 
       <section className={styles.card}>
-        <h1 className={styles.title}>Voxel Editor</h1>
+        <h1 className={styles.title}>Voxel Assembly Editor</h1>
         <p className={styles.subtitle}>
-          Start a new project, open a saved file, or continue from autosave.
+          Build voxel shapes, assemble moving parts, and export towers for Godot.
         </p>
 
         <div className={styles.section}>

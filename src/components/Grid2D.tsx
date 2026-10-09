@@ -1,6 +1,6 @@
 import { formatForDisplay } from '@tanstack/react-hotkeys';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import type { PointerEvent as ReactMouseEvent } from 'react';
 import { HOTKEYS } from '../features/editor/hotkeys';
 import type { EditorTool } from '../features/editor/state/types';
 import Button from './ui/Button';
@@ -63,6 +63,8 @@ interface Props {
   gridData: Uint8Array;
   label: string;
   size: number;
+  onBegin: () => void;
+  onEnd: () => void;
   onSetCell: (index: number, value: number) => void;
   onFillCell: (index: number, value: number) => void;
   tool: EditorTool;
@@ -191,6 +193,8 @@ function drawCanvas(
 }
 
 export default function Grid2D({
+  onBegin,
+  onEnd,
   gridData,
   label,
   size,
@@ -282,6 +286,9 @@ export default function Grid2D({
 
   const handlePointerDown = useCallback(
     (event: ReactMouseEvent<HTMLCanvasElement>) => {
+      if (event.button !== 0) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onBegin();
       const cell = getCell(event);
       if (!cell) {
         return;
@@ -299,7 +306,7 @@ export default function Grid2D({
       drawingRef.current = true;
       applyTool(cell.index);
     },
-    [applyTool, getCell, onFillCell, tool]
+    [applyTool, getCell, onFillCell, onBegin, tool]
   );
 
   const handlePointerMove = useCallback(
@@ -324,13 +331,13 @@ export default function Grid2D({
 
   const handleStopDraw = useCallback(() => {
     drawingRef.current = false;
-  }, []);
+    onEnd();
+  }, [onEnd]);
 
   const handlePointerLeave = useCallback(() => {
-    handleStopDraw();
     setHoverCell(null);
     setFillMask(null);
-  }, [handleStopDraw]);
+  }, []);
 
   const activeToolLabel =
     tool === 'fill'
@@ -373,10 +380,12 @@ export default function Grid2D({
           width={canvasDim}
           height={canvasDim}
           className={styles.canvas}
-          onMouseDown={handlePointerDown}
-          onMouseMove={handlePointerMove}
-          onMouseUp={handleStopDraw}
-          onMouseLeave={handlePointerLeave}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handleStopDraw}
+          onPointerCancel={handleStopDraw}
+          onLostPointerCapture={handleStopDraw}
+          onPointerLeave={handlePointerLeave}
         />
       </div>
     </section>
