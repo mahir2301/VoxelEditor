@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
+import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components';
 import styles from './BaseDialog.module.css';
 
 interface Props {
@@ -23,7 +23,9 @@ export default function BaseDialog({
     <ModalOverlay isOpen={isOpen} className={styles.overlay}>
       <Modal className={size === 'wide' ? styles.wide : styles.modal}>
         <Dialog>
-          <h2 className={styles.title}>{title}</h2>
+          <Heading slot="title" className={styles.title}>
+            {title}
+          </Heading>
           <p className={styles.description}>{description}</p>
           {details ? (
             <details className={styles.details}>
