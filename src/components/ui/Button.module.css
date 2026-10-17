@@ -40,12 +40,12 @@
 .accent {
   background: var(--color-accent-solid);
   border-color: var(--color-accent-solid);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .accent[data-hovered] {
   background: var(--color-accent-hover);
   border-color: var(--color-accent-hover);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .success {
   background: var(--color-selected);

@@ -2,7 +2,7 @@ import { GizmoHelper, GizmoViewport, OrbitControls, TransformControls } from '@r
 import { useRef, useState, useLayoutEffect, useMemo, useEffect } from 'react';
 import { MOUSE, Object3D } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { readCanvasTheme } from '../../theme/canvas';
+import { useCanvasTheme } from '../../theme/useCanvasTheme';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
 import { CompanionPreview } from './CompanionPreview';
 import { PartGroup } from './PartGroup';
@@ -10,7 +10,7 @@ import type { SceneProps } from './types';
 import { ViewportCamera } from './ViewportCamera';
 const mouseButtons = { LEFT: undefined, MIDDLE: MOUSE.PAN, RIGHT: MOUSE.ROTATE };
 export function AssemblyScene(props: SceneProps) {
-  const theme = useMemo(readCanvasTheme, []);
+  const theme = useCanvasTheme();
   const controls = useRef<OrbitControlsImpl>(null),
     [object, setObject] = useState<Object3D | null>(null);
   const selectedId = props.selected.length === 1 ? props.selected[0] : null;

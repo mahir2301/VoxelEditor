@@ -1,9 +1,9 @@
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { Group, Vector3 } from 'three';
 import { previewTransform } from '../../domain/assembly/motion';
 import { rigTransform } from '../../domain/assembly/rig';
-import { readCanvasTheme } from '../../theme/canvas';
+import { useCanvasTheme } from '../../theme/useCanvasTheme';
 import type { Part } from '../editor/state/types';
 import { PieceMesh } from './PieceMesh';
 import type { SceneProps } from './types';
@@ -19,7 +19,7 @@ export function PartGroup({
   inheritedLock?: boolean;
   inheritedEnergy?: boolean;
 }) {
-  const theme = useMemo(readCanvasTheme, []);
+  const theme = useCanvasTheme();
   const ref = useRef<Group>(null),
     fire = useRef(-Infinity),
     elapsed = useRef(0),

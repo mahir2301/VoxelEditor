@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactMouseEvent } from 'react';
 import type { EditorTool } from '../features/editor/state/types';
-import { readCanvasTheme } from '../theme/canvas';
 import type { CanvasTheme } from '../theme/canvas';
+import { useCanvasTheme } from '../theme/useCanvasTheme';
 import Button from './ui/Button';
 import styles from './Grid2D.module.css';
 
@@ -206,6 +206,7 @@ export default function Grid2D({
   modelVoxels,
   view
 }: Props) {
+  const theme = useCanvasTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
@@ -242,7 +243,7 @@ export default function Grid2D({
     if (!context) {
       return;
     }
-    drawCanvas(context, readCanvasTheme(), {
+    drawCanvas(context, theme, {
       canvasDim,
       cellSize,
       gridData,
@@ -252,7 +253,7 @@ export default function Grid2D({
       view,
       fillMask
     });
-  }, [canvasDim, cellSize, fillMask, gridData, hoverCell, modelVoxels, size, view]);
+  }, [canvasDim, cellSize, fillMask, gridData, hoverCell, modelVoxels, size, view, theme]);
 
   const getCell = useCallback(
     (event: ReactMouseEvent<HTMLCanvasElement>): HoverCell | null => {

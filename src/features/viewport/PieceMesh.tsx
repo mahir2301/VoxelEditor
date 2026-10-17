@@ -2,7 +2,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { memo, useMemo, useEffect } from 'react';
 import type { Dispatch } from 'react';
 import { Vector3, type Object3D } from 'three';
-import { readCanvasTheme } from '../../theme/canvas';
+import { useCanvasTheme } from '../../theme/useCanvasTheme';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
 import type { Piece, EditorState, EditorAction } from '../editor/state/types';
 import type { AssemblyTool } from '../workspace/types';
@@ -34,7 +34,7 @@ export const PieceMesh = memo(function PieceMesh({
   teamColor: boolean;
   hit: boolean;
 }) {
-  const theme = useMemo(readCanvasTheme, []);
+  const theme = useCanvasTheme();
   const geometry = useMemo(
     () => buildVoxelGeometry(piece.voxels, piece.colors, state.palette, state.resolution),
     [piece.voxels, piece.colors, state.palette, state.resolution]
