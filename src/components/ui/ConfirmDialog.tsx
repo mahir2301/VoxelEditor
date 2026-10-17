@@ -26,7 +26,13 @@ export default function ConfirmDialog({
   onConfirm
 }: Props) {
   return (
-    <BaseDialog isOpen={isOpen} title={title} description={description} details={details}>
+    <BaseDialog
+      onClose={onCancel}
+      isOpen={isOpen}
+      title={title}
+      description={description}
+      details={details}
+    >
       <div className={styles.actions}>
         <Button onPress={onCancel}>{cancelLabel}</Button>
         {confirmLabel ? (

@@ -2,6 +2,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { memo, useMemo, useEffect } from 'react';
 import type { Dispatch } from 'react';
 import type { Object3D } from 'three';
+import { readCanvasTheme } from '../../theme/canvas';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
 import type { Piece, EditorState, EditorAction } from '../editor/state/types';
 import type { AssemblyTool } from '../workspace/types';
@@ -29,6 +30,7 @@ export const PieceMesh = memo(function PieceMesh({
   energy: boolean;
   powered: boolean;
 }) {
+  const theme = useMemo(readCanvasTheme, []);
   const geometry = useMemo(
     () => buildVoxelGeometry(piece.voxels, piece.colors, state.palette, state.resolution),
     [piece.voxels, piece.colors, state.palette, state.resolution]
@@ -64,7 +66,7 @@ export const PieceMesh = memo(function PieceMesh({
       <meshStandardMaterial
         vertexColors
         color={energy && !powered ? '#62736f' : '#ffffff'}
-        emissive={selected ? '#386e5b' : energy && powered ? '#51bb8c' : '#000000'}
+        emissive={selected ? theme.selection : energy && powered ? '#51bb8c' : '#000000'}
         emissiveIntensity={selected ? 0.35 : 0.22}
         roughness={0.8}
       />

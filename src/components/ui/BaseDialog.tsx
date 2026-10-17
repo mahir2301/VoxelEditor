@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Dialog, Heading, Modal, ModalOverlay } from 'react-aria-components';
+import Disclosure from './Disclosure';
 import styles from './BaseDialog.module.css';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
   description: string;
   details?: string;
   size?: 'default' | 'wide';
+  onClose?: () => void;
   children?: ReactNode;
 }
 
@@ -17,10 +19,17 @@ export default function BaseDialog({
   description,
   details,
   size = 'default',
-  children
+  children,
+  onClose
 }: Props) {
   return (
-    <ModalOverlay isOpen={isOpen} className={styles.overlay}>
+    <ModalOverlay
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose?.();
+      }}
+      className={styles.overlay}
+    >
       <Modal className={size === 'wide' ? styles.wide : styles.modal}>
         <Dialog>
           <Heading slot="title" className={styles.title}>
@@ -28,10 +37,9 @@ export default function BaseDialog({
           </Heading>
           <p className={styles.description}>{description}</p>
           {details ? (
-            <details className={styles.details}>
-              <summary className={styles.detailsSummary}>Technical details</summary>
+            <Disclosure title="Technical details" defaultExpanded={false}>
               <pre className={styles.detailsBody}>{details}</pre>
-            </details>
+            </Disclosure>
           ) : null}
           {children}
         </Dialog>

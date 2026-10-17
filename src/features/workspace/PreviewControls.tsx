@@ -1,5 +1,6 @@
 import Button from '../../components/ui/Button';
 import { NumberInput } from '../../components/ui/Fields';
+import Icon from '../../components/ui/Icon';
 import type { PreviewState } from './types';
 import styles from './Workspace.module.css';
 export const restPreview = (): PreviewState => ({
@@ -38,14 +39,20 @@ export default function PreviewControls({
         />
         <div className={styles.actions}>
           <Button isActive={preview.playing} onPress={() => change({ playing: !preview.playing })}>
+            <Icon name={preview.playing ? 'pause' : 'play'} />
             {preview.playing ? 'Pause motion' : 'Play motion'}
           </Button>
-          <Button onPress={() => change({ shot: preview.shot + 1 })}>Fire / recoil</Button>
+          <Button onPress={() => change({ shot: preview.shot + 1 })}>
+            <Icon name="fire" />
+            Fire / recoil
+          </Button>
         </div>
         <Button isActive={!preview.powered} onPress={() => change({ powered: !preview.powered })}>
+          <Icon name="power" />
           {preview.powered ? 'Power off' : 'Power on'}
         </Button>
         <Button onPress={() => change({ ...restPreview(), reset: preview.reset + 1 })}>
+          <Icon name="rotate" />
           Reset rest pose
         </Button>
         <div className={styles.subheading}>GAME CAMERA</div>

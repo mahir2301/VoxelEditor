@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
+import { Tabs, TabList, Tab, TabPanel } from 'react-aria-components';
 import ColorPalette from '../../components/ColorPalette';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import Disclosure from '../../components/ui/Disclosure';
 import { Choice } from '../../components/ui/Fields';
+import Icon from '../../components/ui/Icon';
 import { diagnostics } from '../../domain/assembly/diagnostics';
 import { newPart } from '../../domain/assembly/model';
 import { descendants } from '../../domain/assembly/transforms';
@@ -149,188 +152,216 @@ export default function Workspace({ state, dispatch, template }: Props) {
   });
   return (
     <div className={styles.workspace}>
-      <div className={styles.modebar}>
-        <div className={styles.tabs}>
-          {(['shape', 'assemble', 'preview'] as const).map((value) => (
-            <Button
-              key={value}
-              isActive={mode === value}
-              onPress={() => {
-                setMode(value);
-                setPreview(restPreview());
-              }}
-            >
-              {value[0].toUpperCase() + value.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className={styles.actions}>
-          <span className={styles.help}>Start from a tower</span>
-          {(['rapid', 'frost', 'beam'] as const).map((kind) => (
-            <Button key={kind} onPress={() => setPendingTemplate(kind)}>
-              {kind}
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <Hierarchy
-            state={state}
-            dispatch={dispatch}
-            selected={selection}
-            select={select}
-            hidden={hidden}
-            locked={locks}
-            toggle={toggle}
-            add={add}
-            editPiece={editPiece}
-          />
+      <Tabs
+        className={styles.workspace}
+        selectedKey={mode}
+        onSelectionChange={(key) => {
+          if (key === 'shape' || key === 'assemble' || key === 'preview') {
+            setMode(key);
+            setPreview(restPreview());
+          }
+        }}
+      >
+        <div className={styles.modebar}>
+          <TabList aria-label="Workspace mode" className={styles.tabs}>
+            {(['shape', 'assemble', 'preview'] as const).map((value) => (
+              <Tab key={value} id={value} className={styles.tab}>
+                <Icon name={value === 'shape' ? 'shape' : value === 'assemble' ? 'cube' : 'play'} />
+                {value[0].toUpperCase() + value.slice(1)}
+              </Tab>
+            ))}
+          </TabList>
           <div className={styles.actions}>
-            <Button
-              isDisabled={!selection.length || selection.some((id) => locked.has(id))}
-              onPress={group}
-            >
-              Group
-            </Button>
-            <Button
-              isActive={isolated}
-              isDisabled={!selection.length && !isolated}
-              onPress={() => setIsolated((v) => !v)}
-            >
-              Isolate
-            </Button>
-            <Button
-              onPress={() => {
-                setHidden(new Set());
-                setIsolated(false);
-              }}
-            >
-              Show all
-            </Button>
+            <span className={styles.help}>Tower starters</span>
+            {(['rapid', 'frost', 'beam'] as const).map((kind) => (
+              <Button key={kind} onPress={() => setPendingTemplate(kind)}>
+                {kind[0].toUpperCase() + kind.slice(1)}
+              </Button>
+            ))}
           </div>
-          <details className={styles.palette} open>
-            <summary>PALETTE</summary>
-            <ColorPalette
-              palette={state.palette}
-              selectedColor={state.selectedColor}
-              onColorSelect={(colorIndex) => dispatch({ type: 'SET_COLOR', colorIndex })}
-              onColorChange={(colorIndex, color) =>
-                dispatch({ type: 'SET_PALETTE_COLOR', colorIndex, color })
-              }
-            />
-          </details>
-        </aside>
-        <main className={styles.main}>
-          {mode === 'shape' ? (
-            <>
-              <div className={styles.tools}>
-                {(['draw', 'erase', 'fill', 'fillErase'] as const).map((value) => (
-                  <Button
-                    key={value}
-                    isActive={state.tool === value}
-                    onPress={() => dispatch({ type: 'SET_TOOL', tool: value })}
-                  >
-                    {value === 'fillErase' ? 'Fill erase' : value}
-                  </Button>
-                ))}
-                <Button onPress={() => dispatch({ type: 'COPY_FRONT_TO_SIDE' })}>
-                  Front → Side
-                </Button>
-              </div>
-              <ShapeWorkspace state={state} dispatch={dispatch} />
-            </>
-          ) : (
-            <>
-              <div className={styles.tools}>
-                {mode === 'assemble' &&
-                  (['select', 'move', 'rotate', 'pivot', 'paint', 'paintFill'] as const).map(
-                    (value) => (
-                      <Button key={value} isActive={tool === value} onPress={() => setTool(value)}>
-                        {value === 'paintFill'
-                          ? 'Paint fill'
-                          : value[0].toUpperCase() + value.slice(1)}
-                      </Button>
-                    )
-                  )}
-                <Button onPress={() => setFocus((v) => v + 1)}>Focus · F</Button>
-                <Choice
-                  label="Snap"
-                  value={String(snap)}
-                  options={[
-                    { id: '1', label: '1 voxel' },
-                    { id: '0.5', label: '½ voxel' },
-                    { id: '0', label: 'Free' }
-                  ]}
-                  onChange={(value) => setSnap(Number(value))}
-                />
-                <Button
-                  isActive={state.cameraMode === 'isometric'}
-                  onPress={() =>
-                    dispatch({
-                      type: 'SET_CAMERA_MODE',
-                      mode: state.cameraMode === 'isometric' ? 'perspective' : 'isometric'
-                    })
-                  }
-                >
-                  Isometric
-                </Button>
-              </div>
-              <AssemblyViewport
-                state={state}
-                dispatch={dispatch}
-                selected={selection}
-                select={select}
-                clearSelection={() => setSelected([])}
-                hidden={hidden}
-                locked={locked}
-                isolate={isolate}
-                tool={tool}
-                snap={snap}
-                focusToken={focus}
-                preview={mode === 'preview' ? preview : undefined}
-              />
-            </>
-          )}
-          <div className={styles.status}>
-            <span>
-              {mode === 'preview'
-                ? 'Preview pose · rest pose exports'
-                : selection.length
-                  ? `${selection.length} selected`
-                  : 'Select geometry in the viewport or hierarchy'}
-            </span>
-            <span>
-              {state.resolution}³ · {state.voxelsPerUnit} voxels/unit
-            </span>
-          </div>
-        </main>
-        <aside className={styles.sidebar}>
-          {mode === 'preview' ? (
-            <PreviewControls
-              preview={preview}
-              change={(changes) => setPreview((prev) => ({ ...prev, ...changes }))}
-            />
-          ) : (
-            <Inspector
+        </div>
+        <TabPanel key={mode} id={mode} className={styles.layout}>
+          <aside className={styles.sidebar}>
+            <Hierarchy
+              key={state.parts[0]?.id}
               state={state}
               dispatch={dispatch}
-              id={selection.length === 1 ? selection[0] : null}
-              disabled={mode === 'shape' || selection.some((id) => locked.has(id))}
-              pivot={tool === 'pivot'}
+              selected={selection}
+              setSelection={setSelected}
+              select={select}
+              hidden={hidden}
+              locked={locks}
+              toggle={toggle}
+              add={add}
               editPiece={editPiece}
             />
-          )}
-          <details className={styles.diagnostics} open>
-            <summary>MODEL CHECKS · {messages.length}</summary>
-            {messages.length ? (
-              messages.map((message) => <p key={message}>{message}</p>)
+            <div className={styles.actions}>
+              <Button
+                isDisabled={!selection.length || selection.some((id) => locked.has(id))}
+                onPress={group}
+              >
+                Group
+              </Button>
+              <Button
+                isActive={isolated}
+                isDisabled={!selection.length && !isolated}
+                onPress={() => setIsolated((v) => !v)}
+              >
+                Isolate
+              </Button>
+              <Button
+                onPress={() => {
+                  setHidden(new Set());
+                  setIsolated(false);
+                }}
+              >
+                Show all
+              </Button>
+            </div>
+            <Disclosure title="Palette">
+              <ColorPalette
+                palette={state.palette}
+                selectedColor={state.selectedColor}
+                onColorSelect={(colorIndex) => dispatch({ type: 'SET_COLOR', colorIndex })}
+                onColorChange={(colorIndex, color) =>
+                  dispatch({ type: 'SET_PALETTE_COLOR', colorIndex, color })
+                }
+              />
+            </Disclosure>
+          </aside>
+          <main className={styles.main}>
+            {mode === 'shape' ? (
+              <>
+                <div className={styles.tools}>
+                  {(['draw', 'erase', 'fill', 'fillErase'] as const).map((value) => (
+                    <Button
+                      key={value}
+                      isActive={state.tool === value}
+                      onPress={() => dispatch({ type: 'SET_TOOL', tool: value })}
+                    >
+                      <Icon
+                        name={value === 'draw' ? 'paint' : value === 'erase' ? 'erase' : 'fill'}
+                      />
+                      {value === 'fillErase'
+                        ? 'Fill erase'
+                        : value[0].toUpperCase() + value.slice(1)}
+                    </Button>
+                  ))}
+                  <Button onPress={() => dispatch({ type: 'COPY_FRONT_TO_SIDE' })}>
+                    Front → Side
+                  </Button>
+                </div>
+                <ShapeWorkspace state={state} dispatch={dispatch} />
+              </>
             ) : (
-              <p>Assembly is ready to export.</p>
+              <>
+                <div className={styles.tools}>
+                  {mode === 'assemble' &&
+                    (['select', 'move', 'rotate', 'pivot', 'paint', 'paintFill'] as const).map(
+                      (value) => (
+                        <Button
+                          key={value}
+                          isActive={tool === value}
+                          onPress={() => setTool(value)}
+                        >
+                          <Icon name={value === 'paintFill' ? 'fill' : value} />
+                          {value === 'paintFill'
+                            ? 'Paint fill'
+                            : value[0].toUpperCase() + value.slice(1)}
+                        </Button>
+                      )
+                    )}
+                  <Button onPress={() => setFocus((v) => v + 1)}>
+                    <Icon name="focus" />
+                    Focus <kbd>F</kbd>
+                  </Button>
+                  <Choice
+                    label="Snap"
+                    value={String(snap)}
+                    options={[
+                      { id: '1', label: '1 voxel' },
+                      { id: '0.5', label: '½ voxel' },
+                      { id: '0', label: 'Free' }
+                    ]}
+                    onChange={(value) => setSnap(Number(value))}
+                  />
+                  <Button
+                    isActive={state.cameraMode === 'isometric'}
+                    onPress={() =>
+                      dispatch({
+                        type: 'SET_CAMERA_MODE',
+                        mode: state.cameraMode === 'isometric' ? 'perspective' : 'isometric'
+                      })
+                    }
+                  >
+                    Isometric
+                  </Button>
+                </div>
+                <AssemblyViewport
+                  state={state}
+                  dispatch={dispatch}
+                  selected={selection}
+                  select={select}
+                  clearSelection={() => setSelected([])}
+                  hidden={hidden}
+                  locked={locked}
+                  isolate={isolate}
+                  tool={tool}
+                  snap={snap}
+                  focusToken={focus}
+                  preview={mode === 'preview' ? preview : undefined}
+                />
+              </>
             )}
-          </details>
-        </aside>
-      </div>
+            <div className={styles.status}>
+              <span>
+                {mode === 'preview'
+                  ? 'Preview pose · rest pose exports'
+                  : selection.length
+                    ? `${selection.length} selected`
+                    : 'Select geometry in the viewport or hierarchy'}
+              </span>
+              <span>
+                {state.resolution}³ · {state.voxelsPerUnit} voxels/unit
+              </span>
+            </div>
+          </main>
+          <aside className={styles.sidebar}>
+            {mode === 'preview' ? (
+              <PreviewControls
+                preview={preview}
+                change={(changes) => setPreview((prev) => ({ ...prev, ...changes }))}
+              />
+            ) : (
+              <Inspector
+                state={state}
+                dispatch={dispatch}
+                id={selection.length === 1 ? selection[0] : null}
+                disabled={mode === 'shape' || selection.some((id) => locked.has(id))}
+                pivot={tool === 'pivot'}
+                editPiece={editPiece}
+              />
+            )}
+            <Disclosure title={`Model checks · ${messages.length}`}>
+              <div className={styles.diagnostics}>
+                {messages.length ? (
+                  messages.map((message) => (
+                    <p key={message}>
+                      <Icon name="warning" size={14} />
+                      {message}
+                    </p>
+                  ))
+                ) : (
+                  <p className={styles.ready}>
+                    <Icon name="check" size={14} />
+                    Assembly is ready to export.
+                  </p>
+                )}
+              </div>
+            </Disclosure>
+          </aside>
+        </TabPanel>
+      </Tabs>
       <ConfirmDialog
         isOpen={Boolean(pendingPiece)}
         title="Replace current draft?"

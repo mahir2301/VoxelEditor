@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
+import Icon from './components/ui/Icon';
 import { towerTemplate } from './domain/assembly/templates';
 import { getInitialState } from './features/editor/state/document';
 import { loadStateFromStorage } from './features/editor/state/persistence';
@@ -10,7 +11,12 @@ import type { EditorSnapshot, SerializedProject } from './features/editor/state/
 import ProjectToolbar from './features/workspace/ProjectToolbar';
 import { useWorkspaceShortcuts } from './features/workspace/useWorkspaceShortcuts';
 const Workspace = lazy(() => import('./features/workspace/Workspace'));
-const loadingWorkspace = <div>Loading workspace…</div>;
+const loadingWorkspace = (
+  <div className={styles.loading} role="status">
+    <Icon name="cube" size={28} />
+    Loading workspace…
+  </div>
+);
 import { exportPresentation, exportProject } from './features/export/projectFiles';
 import { useVoxelState } from './hooks/useVoxelState';
 import styles from './App.module.css';

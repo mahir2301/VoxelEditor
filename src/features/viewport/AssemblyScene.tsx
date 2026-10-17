@@ -2,12 +2,14 @@ import { GizmoHelper, GizmoViewport, OrbitControls, TransformControls } from '@r
 import { useRef, useState, useLayoutEffect, useMemo, useEffect } from 'react';
 import { MOUSE, Object3D } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { readCanvasTheme } from '../../theme/canvas';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
 import { PartGroup } from './PartGroup';
 import type { SceneProps } from './types';
 import { ViewportCamera } from './ViewportCamera';
 const mouseButtons = { LEFT: undefined, MIDDLE: MOUSE.PAN, RIGHT: MOUSE.ROTATE };
 export function AssemblyScene(props: SceneProps) {
+  const theme = useMemo(readCanvasTheme, []);
   const controls = useRef<OrbitControlsImpl>(null),
     [object, setObject] = useState<Object3D | null>(null);
   const selectedId = props.selected.length === 1 ? props.selected[0] : null;
@@ -37,7 +39,7 @@ export function AssemblyScene(props: SceneProps) {
   useEffect(() => () => draftGeometry?.dispose(), [draftGeometry]);
   return (
     <>
-      <color attach="background" args={['#14201e']} />
+      <color attach="background" args={[theme.background]} />
       <ambientLight intensity={0.85} />
       <directionalLight position={[20, 30, 20]} intensity={2} />
       <directionalLight position={[-15, 10, -20]} intensity={0.7} />
@@ -45,14 +47,14 @@ export function AssemblyScene(props: SceneProps) {
         args={[
           props.state.resolution * 4,
           (props.state.resolution * 4) / props.state.voxelsPerUnit,
-          '#3f6358',
-          '#294039'
+          theme.gridPrimary,
+          theme.gridSecondary
         ]}
       />
       <group ref={props.root}>
         {props.draft ? (
           <mesh geometry={draftGeometry!}>
-            <meshStandardMaterial color="#83d2ad" roughness={0.8} />
+            <meshStandardMaterial color={theme.draft} roughness={0.8} />
           </mesh>
         ) : (
           props.state.parts

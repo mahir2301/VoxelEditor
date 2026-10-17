@@ -1,6 +1,7 @@
 import {
   Button as AriaButton,
   Input,
+  Group,
   Label,
   ListBox,
   ListBoxItem,
@@ -10,6 +11,7 @@ import {
   SelectValue,
   TextField
 } from 'react-aria-components';
+import Icon from './Icon';
 import styles from './Fields.module.css';
 export function TextInput({
   label,
@@ -54,7 +56,17 @@ export function NumberInput({
       }}
     >
       <Label>{label}</Label>
-      <Input />
+      <Group className={styles.numberControl}>
+        <Input />
+        <div className={styles.steppers}>
+          <AriaButton slot="increment" aria-label="Increase">
+            <Icon name="chevron" size={10} />
+          </AriaButton>
+          <AriaButton slot="decrement" aria-label="Decrease">
+            <Icon name="chevron" size={10} />
+          </AriaButton>
+        </div>
+      </Group>
     </NumberField>
   );
 }
@@ -66,7 +78,7 @@ export function Choice({
 }: {
   label: string;
   value: string;
-  options: { id: string; label: string }[];
+  options: { id: string; label: string; color?: string }[];
   onChange: (value: string) => void;
 }) {
   return (
@@ -79,14 +91,17 @@ export function Choice({
     >
       <Label>{label}</Label>
       <AriaButton className={styles.select}>
-        <SelectValue />
-        <span>⌄</span>
+        <SelectValue>{({ selectedText }) => selectedText}</SelectValue>
+        <Icon name="chevron" size={13} />
       </AriaButton>
       <Popover className={styles.popover}>
-        <ListBox>
+        <ListBox className={styles.list}>
           {options.map((o) => (
             <ListBoxItem id={o.id} key={o.id} textValue={o.label} className={styles.option}>
-              {o.label}
+              <span className={styles.optionContent}>
+                {o.color && <span className={styles.swatch} style={{ background: o.color }} />}
+                {o.label}
+              </span>
             </ListBoxItem>
           ))}
         </ListBox>

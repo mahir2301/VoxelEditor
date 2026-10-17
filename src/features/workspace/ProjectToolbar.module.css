@@ -1,51 +1,93 @@
 .toolbar {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   align-items: center;
-  padding: 15px 20px;
-  background: #0e1914;
-  border-bottom: 1px solid #30413b;
+  min-height: 76px;
+  padding: 14px 20px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 .brand {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
+  min-width: 180px;
 }
 .mark {
-  color: #87d3a7;
-  font-size: 32px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-accent);
+  background: var(--color-surface);
 }
-.brand div {
+.brand > div {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-1);
 }
 .brand strong {
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
-.brand span:last-child {
-  color: #8da998;
+.brand > div > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-secondary);
   font-size: 11px;
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}
+.saveState {
+  color: var(--color-muted);
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.saveState::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
 }
 .divider {
   height: 22px;
-  border-left: 1px solid #30413b;
-  margin: 0 5px;
+  border-left: 1px solid var(--color-border);
+  margin: 0 var(--space-1);
 }
-@media (max-width: 1000px) {
+.compactLabel {
+  display: none;
+}
+@media (max-width: 1280px) {
+  .optionalLabel {
+    display: none;
+  }
+  .compactLabel {
+    display: inline;
+  }
+}
+@media (max-width: 900px) {
   .toolbar {
     flex-wrap: wrap;
-    padding: 12px;
+    gap: 10px;
+    padding: var(--space-3);
   }
   .actions {
-    gap: 4px;
+    justify-content: flex-start;
   }
 }

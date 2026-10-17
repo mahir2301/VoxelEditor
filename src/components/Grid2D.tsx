@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactMouseEvent } from 'react';
 import { HOTKEYS } from '../features/editor/hotkeys';
 import type { EditorTool } from '../features/editor/state/types';
+import { readCanvasTheme } from '../theme/canvas';
+import type { CanvasTheme } from '../theme/canvas';
 import Button from './ui/Button';
 import styles from './Grid2D.module.css';
 
@@ -75,19 +77,20 @@ interface Props {
 
 function drawCanvas(
   ctx: CanvasRenderingContext2D,
+  theme: CanvasTheme,
   { gridData, size, canvasDim, cellSize, hoverCell, modelVoxels, view, fillMask }: DrawCanvasInput
 ): void {
-  ctx.fillStyle = '#111b2a';
+  ctx.fillStyle = theme.gridBackground;
   ctx.fillRect(0, 0, canvasDim, canvasDim);
 
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const index = x + y * size;
       if (gridData[index]) {
-        ctx.fillStyle = '#5ca0d8';
+        ctx.fillStyle = theme.gridSelection;
         ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
-      ctx.strokeStyle = '#253851';
+      ctx.strokeStyle = theme.gridLine;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
     }
@@ -95,7 +98,7 @@ function drawCanvas(
 
   for (const fraction of [0.25, 0.75]) {
     const position = Math.round(size * fraction) * cellSize;
-    ctx.strokeStyle = 'rgba(236, 243, 252, 0.26)';
+    ctx.strokeStyle = theme.gridQuarter;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(position, 0);
@@ -108,7 +111,7 @@ function drawCanvas(
   }
 
   const halfPosition = Math.round(size / 2) * cellSize;
-  ctx.strokeStyle = 'rgba(236, 243, 252, 0.45)';
+  ctx.strokeStyle = theme.gridCenter;
   ctx.lineWidth = 1.6;
   ctx.beginPath();
   ctx.moveTo(halfPosition, 0);
@@ -140,7 +143,7 @@ function drawCanvas(
       silhouette[col + row * size] = 1;
     }
 
-    ctx.strokeStyle = 'rgba(232, 178, 95, 0.85)';
+    ctx.strokeStyle = theme.draft;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     for (let row = 0; row < size; row += 1) {
@@ -174,7 +177,7 @@ function drawCanvas(
   }
 
   if (fillMask) {
-    ctx.fillStyle = 'rgba(119, 201, 160, 0.26)';
+    ctx.fillStyle = theme.gridFill;
     for (let index = 0; index < fillMask.length; index += 1) {
       if (!fillMask[index]) {
         continue;
@@ -186,7 +189,7 @@ function drawCanvas(
   }
 
   if (hoverCell) {
-    ctx.strokeStyle = '#d3e6f8';
+    ctx.strokeStyle = theme.gridHover;
     ctx.lineWidth = 1.8;
     ctx.strokeRect(hoverCell.x * cellSize, hoverCell.y * cellSize, cellSize, cellSize);
   }
@@ -241,7 +244,7 @@ export default function Grid2D({
     if (!context) {
       return;
     }
-    drawCanvas(context, {
+    drawCanvas(context, readCanvasTheme(), {
       canvasDim,
       cellSize,
       gridData,
@@ -376,6 +379,7 @@ export default function Grid2D({
 
       <div className={styles.canvasWrap} ref={wrapRef}>
         <canvas
+          aria-label={`${label} voxel projection`}
           ref={canvasRef}
           width={canvasDim}
           height={canvasDim}

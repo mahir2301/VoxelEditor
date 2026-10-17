@@ -1,7 +1,8 @@
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Group, Vector3 } from 'three';
 import { previewTransform } from '../../domain/assembly/motion';
+import { readCanvasTheme } from '../../theme/canvas';
 import type { Part } from '../editor/state/types';
 import { PieceMesh } from './PieceMesh';
 import type { SceneProps } from './types';
@@ -17,6 +18,7 @@ export function PartGroup({
   inheritedLock?: boolean;
   inheritedEnergy?: boolean;
 }) {
+  const theme = useMemo(readCanvasTheme, []);
   const ref = useRef<Group>(null),
     fire = useRef(-Infinity),
     elapsed = useRef(0),
@@ -80,11 +82,11 @@ export function PartGroup({
           }}
         >
           <axesHelper args={[2]} />
-          <arrowHelper args={[socketDirection, new Vector3(), 3, 0x83d2ad, 0.8, 0.5]} />
+          <arrowHelper args={[socketDirection, new Vector3(), 3, theme.socket, 0.8, 0.5]} />
           <mesh>
             <octahedronGeometry args={[0.5]} />
             <meshBasicMaterial
-              color={props.selected.includes(part.id) ? '#ffe29d' : '#83d2ad'}
+              color={props.selected.includes(part.id) ? theme.gridHover : theme.socket}
               wireframe
             />
           </mesh>

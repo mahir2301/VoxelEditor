@@ -28,20 +28,28 @@ The complete game contract and validation commands are owned by [`voxel-td/docs/
 
 ## Controls
 
-| Action                         | Control                                          |
-| ------------------------------ | ------------------------------------------------ |
-| Orbit / pan / zoom             | Right drag / middle or Shift-right drag / scroll |
-| Select multiple                | Shift-click hierarchy or geometry                |
-| Select / move / rotate / pivot | V / G / R / B                                    |
-| Paint / paint fill / focus     | P / Shift-P / F                                  |
-| Shape draw / erase             | D / E                                            |
-| Shape fill / fill erase        | Shift-D / Shift-E                                |
-| Apply draft                    | Command/Ctrl-Enter                               |
-| Duplicate / delete             | Command/Ctrl-D / Delete                          |
-| Undo / redo                    | Command/Ctrl-Z / Command/Ctrl-Shift-Z            |
-| Cancel transform               | Escape                                           |
+| Action                         | Control                                                           |
+| ------------------------------ | ----------------------------------------------------------------- |
+| Orbit / pan / zoom             | Right drag / middle or Shift-right drag / scroll                  |
+| Select multiple                | Shift-click hierarchy ranges; Command/Ctrl-click individual nodes |
+| Select / move / rotate / pivot | V / G / R / B                                                     |
+| Paint / paint fill / focus     | P / Shift-P / F                                                   |
+| Shape draw / erase             | D / E                                                             |
+| Shape fill / fill erase        | Shift-D / Shift-E                                                 |
+| Apply draft                    | Command/Ctrl-Enter                                                |
+| Duplicate / delete             | Command/Ctrl-D / Delete                                           |
+| Undo / redo                    | Command/Ctrl-Z / Command/Ctrl-Shift-Z                             |
+| Cancel transform               | Escape                                                            |
 
-Hierarchy supports search, collapse, drag reparenting, grouping, duplicate/delete subtree, hide, lock and isolate. Translation snaps to one voxel, half a voxel or free; enabled snapping uses 15° rotation increments. Scale stays one. One stroke/drag produces one undo step. View/tool/selection and preview changes stay outside history and serialization. Export does not mark the editable project saved.
+The React Aria hierarchy supports search, arrow-key navigation/collapse, typeahead, range/multiple selection, pointer and keyboard drag reparenting, grouping, duplicate/delete subtree, hide, lock and isolate. Letters type ahead to matching hierarchy nodes while the tree has focus; single-letter viewport tool shortcuts apply outside the tree. Use a row’s Move handle, press Enter, navigate drop targets with Tab, and press Enter to drop or Escape to cancel. Double-click a geometry piece or use its Edit shape action to edit projections. Translation snaps to one voxel, half a voxel or free; enabled snapping uses 15° rotation increments. Scale stays one. One stroke/drag produces one undo step. View/tool/selection and preview changes stay outside history and serialization. Export does not mark the editable project saved.
+
+## Interface design
+
+The editor uses a single slate-blue theme across the landing screen, workspace, projection canvases, viewport overlays, menus and dialogs. `src/theme/tokens.css` owns colors, spacing, radii, focus and popup shadows; CSS Modules consume those tokens. `src/theme/canvas.ts` reads the same CSS tokens for 2D canvas/Three.js editor accents. Authored model colors, energy appearance and conventional XYZ axis colors remain artwork/presentation data.
+
+All interface controls are built with `react-aria-components`: Tabs, Tree/TreeItem with drag-and-drop hooks, Button/Tooltip, TextField/NumberField/Select, palette ToggleButtonGroup/ColorPicker, Disclosure and Modal/Dialog. Shared wrappers live in `components/ui`; numeric fields include accessible stepper buttons. Both select variants share the same implementation. Interactive states use React Aria data attributes. Icon-only actions have labels/tooltips; focus is visible, dialogs support Escape, motion respects reduced-motion preferences, and compact layouts stack the inspector below the workspace rather than clipping it.
+
+Use the shared tokens and wrappers for future UI work. Blue identifies selection/primary actions; amber and red are reserved for warnings and destructive actions. Do not add a second theme through component-specific color overrides. Canvas pointer editing remains custom geometry interaction, independent of the React Aria control layer.
 
 ## Internals
 

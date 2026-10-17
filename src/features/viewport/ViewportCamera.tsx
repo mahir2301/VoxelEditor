@@ -69,7 +69,9 @@ export function ViewportCamera({
     props.state.resolution,
     previewQuarter,
     camera,
-    modelIdentity
+    modelIdentity,
+    size.width,
+    size.height
   ]);
   return null;
 }

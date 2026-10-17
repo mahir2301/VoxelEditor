@@ -2,6 +2,7 @@ import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { useMemo, useRef, useEffect } from 'react';
 import { Group, Object3D } from 'three';
+import Icon from '../../components/ui/Icon';
 import { AssemblyScene } from './AssemblyScene';
 import type { ViewportProps } from './types';
 import styles from '../workspace/Workspace.module.css';
@@ -46,6 +47,13 @@ export default function AssemblyViewport(props: ViewportProps) {
           <AssemblyScene {...props} objects={objects} root={root} />
         </>
       </Canvas>
+      {!props.draft && !props.state.pieces.length && (
+        <div className={styles.emptyViewport}>
+          <Icon name="cube" size={36} />
+          <strong>Your assembly starts here</strong>
+          <p>Create a piece in Shape, or open a tower starter.</p>
+        </div>
+      )}
       <div className={styles.viewportHint}>
         Right drag orbit · Middle / Shift-right drag pan · Scroll zoom
       </div>

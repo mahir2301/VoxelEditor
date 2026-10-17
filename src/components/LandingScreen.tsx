@@ -4,6 +4,7 @@ import type { SerializedProject } from '../features/editor/state/types';
 import { importProject } from '../features/export/projectFiles';
 import Button from './ui/Button';
 import ConfirmDialog from './ui/ConfirmDialog';
+import Icon from './ui/Icon';
 import SelectField from './ui/SelectField';
 import styles from './LandingScreen.module.css';
 
@@ -99,39 +100,105 @@ export default function LandingScreen({
         onCancel={closeImportError}
       />
 
-      <section className={styles.card}>
-        <h1 className={styles.title}>Voxel Assembly Editor</h1>
-        <p className={styles.subtitle}>
-          Build voxel shapes, assemble moving parts, and export towers for Godot.
-        </p>
+      <div className={styles.shell}>
+        <header className={styles.brand}>
+          <span>
+            <Icon name="cube" size={24} />
+          </span>
+          Voxel editor <small>ASSEMBLY WORKSPACE</small>
+        </header>
+        <div className={styles.layout}>
+          <section className={styles.intro}>
+            <p className={styles.eyebrow}>FROM VOXELS TO MOVING PARTS</p>
+            <h1 className={styles.headline}>
+              Build shapes.
+              <br />
+              Assemble motion.
+            </h1>
+            <p className={styles.description}>
+              A focused workspace for voxel models with real hierarchy, precise pivots, and moving
+              parts.
+            </p>
+            <ol className={styles.workflow}>
+              <li>
+                <Icon name="shape" size={20} />
+                <div>
+                  <strong>Shape</strong>
+                  <p>Draw three views. Create solid voxel pieces.</p>
+                </div>
+                <span>01</span>
+              </li>
+              <li>
+                <Icon name="cube" size={20} />
+                <div>
+                  <strong>Assemble</strong>
+                  <p>Group geometry. Place pivots and sockets.</p>
+                </div>
+                <span>02</span>
+              </li>
+              <li>
+                <Icon name="play" size={20} />
+                <div>
+                  <strong>Preview</strong>
+                  <p>Rehearse movement. Export your assembly.</p>
+                </div>
+                <span>03</span>
+              </li>
+            </ol>
+          </section>
+          <section className={styles.card}>
+            <h2 className={styles.title}>Your next assembly</h2>
+            <p className={styles.subtitle}>Start fresh or pick up an editable project.</p>
 
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>New Project</h2>
-          <div className={styles.row}>
-            <SelectField
-              label="Resolution"
-              value={resolution}
-              options={RESOLUTION_OPTIONS}
-              onChange={onResolutionChange}
-            />
-            <Button variant="accent" onPress={onCreateProject}>
-              Create Project
-            </Button>
-          </div>
-        </div>
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <Icon name="plus" />
+                Create a project
+              </h3>
+              <div className={styles.row}>
+                <SelectField
+                  label="Resolution"
+                  value={resolution}
+                  options={RESOLUTION_OPTIONS}
+                  onChange={onResolutionChange}
+                />
+                <Button variant="accent" onPress={onCreateProject}>
+                  <Icon name="plus" />
+                  Create project
+                </Button>
+              </div>
+            </div>
 
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Open Project</h2>
-          <div className={styles.row}>
-            <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handleImport}>
-              <Button isDisabled={importing}>{importing ? 'Importing...' : 'Load Project'}</Button>
-            </FileTrigger>
-            <Button isDisabled={!hasAutosave || importing} onPress={onLoadAutosave}>
-              Load Autosave
-            </Button>
-          </div>
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                <Icon name="folder" />
+                Open a project
+              </h3>
+              <div className={styles.row}>
+                <FileTrigger acceptedFileTypes={ACCEPTED_PROJECT_TYPES} onSelect={handleImport}>
+                  <Button isDisabled={importing}>
+                    <Icon name="folder" />
+                    {importing ? 'Importing…' : 'Load project'}
+                  </Button>
+                </FileTrigger>
+                <Button isDisabled={!hasAutosave || importing} onPress={onLoadAutosave}>
+                  <Icon name="rotate" />
+                  Load autosave
+                </Button>
+              </div>
+              <p className={styles.hint}>Editable .voxproj and legacy JSON projects</p>
+            </div>
+            <p className={styles.localNote}>
+              <Icon name="lock" size={13} />
+              Projects stay on your device.
+            </p>
+          </section>
         </div>
-      </section>
+        <footer className={styles.footer}>
+          <span>Voxel geometry · Rigid assemblies · glTF export</span>
+          <span>Built with React Aria Components</span>
+        </footer>
+      </div>
     </main>
   );
 }
