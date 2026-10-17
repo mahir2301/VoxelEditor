@@ -3,12 +3,14 @@ import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import Icon from './components/ui/Icon';
 import { towerTemplate } from './domain/assembly/templates';
+import { HOTKEYS } from './features/editor/hotkeys';
 import { getInitialState } from './features/editor/state/document';
 import { loadStateFromStorage } from './features/editor/state/persistence';
 import { parseSerializedProjectOrThrow } from './features/editor/state/projectSchema';
 import { serializeState } from './features/editor/state/serialization';
 import type { EditorSnapshot, SerializedProject } from './features/editor/state/types';
 import ProjectToolbar from './features/workspace/ProjectToolbar';
+import ShortcutsDialog from './features/workspace/ShortcutsDialog';
 import { useWorkspaceShortcuts } from './features/workspace/useWorkspaceShortcuts';
 const Workspace = lazy(() => import('./features/workspace/Workspace'));
 const loadingWorkspace = (
@@ -27,6 +29,7 @@ export default function App() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState<string | null>(null),
     [leaving, setLeaving] = useState(false),
+    [shortcutsOpen, setShortcutsOpen] = useState(false),
     [saved, setSaved] = useState<EditorSnapshot | null>(null);
   const cleanAfterLoad = useRef(false);
   const { state, dispatch, document, autosaveError, canUndo, canRedo } = useVoxelState(active);
@@ -105,13 +108,14 @@ export default function App() {
   useWorkspaceShortcuts(
     active
       ? {
-          'mod+s': save,
-          'mod+e': () => {
+          [HOTKEYS.saveProject]: save,
+          [HOTKEYS.exportGlb]: () => {
             void exportGlb();
           },
-          'mod+z': () => dispatch({ type: 'UNDO' }),
-          'mod+shift+z': () => dispatch({ type: 'REDO' }),
-          'shift+escape': back
+          [HOTKEYS.undo]: () => dispatch({ type: 'UNDO' }),
+          [HOTKEYS.redo]: () => dispatch({ type: 'REDO' }),
+          [HOTKEYS.openShortcuts]: () => setShortcutsOpen(true),
+          [HOTKEYS.backToLanding]: back
         }
       : {}
   );
@@ -150,6 +154,7 @@ export default function App() {
         }}
         exportMetadata={exportBindings}
         back={back}
+        shortcuts={() => setShortcutsOpen(true)}
       />
       <Suspense fallback={loadingWorkspace}>
         <Workspace
@@ -168,6 +173,7 @@ export default function App() {
           {autosaveError}
         </div>
       )}
+      <ShortcutsDialog isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <ConfirmDialog
         isOpen={Boolean(error)}
         title="Operation failed"

@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 export function useWorkspaceShortcuts(commands: Record<string, () => void>) {
   useEffect(() => {
+    const normalizedCommands = Object.fromEntries(
+      Object.entries(commands).map(([key, command]) => [key.toLowerCase(), command])
+    );
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       const target = event.target;
@@ -19,7 +22,7 @@ export function useWorkspaceShortcuts(commands: Record<string, () => void>) {
       )
         return;
       const key = `${event.metaKey || event.ctrlKey ? 'mod+' : ''}${event.shiftKey ? 'shift+' : ''}${event.key.toLowerCase()}`;
-      const command = commands[key];
+      const command = normalizedCommands[key];
       if (command) {
         event.preventDefault();
         command();

@@ -1,22 +1,25 @@
+import type { Hotkey } from '@tanstack/react-hotkeys';
+
 export const HOTKEYS = {
   backToLanding: 'Shift+Escape',
   cancelEditing: 'Escape',
-  drawTool: 'D',
-  eraseTool: 'E',
-  fillEraseTool: 'Shift+E',
-  fillTool: 'Shift+D',
-  exportGlb: 'Mod+E',
-  isometricCamera: 'I',
-  newPiece: 'N',
-  openShortcuts: 'Shift+H',
+  selectTool: 'V',
+  moveTool: 'G',
+  rotateTool: 'R',
+  pivotTool: 'B',
   paintTool: 'P',
   paintFillTool: 'Shift+P',
-  perspectiveCamera: 'O',
+  focusSelection: 'F',
+  drawTool: 'D',
+  eraseTool: 'E',
+  fillTool: 'Shift+D',
+  fillEraseTool: 'Shift+E',
   pushOrDonePiece: 'Mod+Enter',
+  duplicate: 'Mod+D',
+  deleteSelection: 'Delete',
+  undo: 'Mod+Z',
   redo: 'Mod+Shift+Z',
   saveProject: 'Mod+S',
-  undo: 'Mod+Z',
-  viewFront: 'F',
-  viewSide: 'R',
-  viewTop: 'T'
-} as const;
+  exportGlb: 'Mod+E',
+  openShortcuts: 'Shift+H'
+} as const satisfies Record<string, Hotkey>;

@@ -9,6 +9,7 @@ import Icon from '../../components/ui/Icon';
 import { diagnostics } from '../../domain/assembly/diagnostics';
 import { newPart } from '../../domain/assembly/model';
 import { descendants } from '../../domain/assembly/transforms';
+import { HOTKEYS } from '../editor/hotkeys';
 import AssemblyViewport from '../viewport/AssemblyViewport';
 import Hierarchy from './Hierarchy';
 import Inspector from './Inspector';
@@ -130,25 +131,26 @@ export default function Workspace({ state, dispatch, template }: Props) {
     dispatch({ type: 'END_TRANSACTION' });
   }
   useWorkspaceShortcuts({
-    v: () => setTool('select'),
-    g: () => setTool('move'),
-    r: () => setTool('rotate'),
-    b: () => setTool('pivot'),
-    p: () => setTool('paint'),
-    'shift+p': () => setTool('paintFill'),
-    f: () => setFocus((v) => v + 1),
-    d: () => dispatch({ type: 'SET_TOOL', tool: 'draw' }),
-    e: () => dispatch({ type: 'SET_TOOL', tool: 'erase' }),
-    'shift+d': () => dispatch({ type: 'SET_TOOL', tool: 'fill' }),
-    'shift+e': () => dispatch({ type: 'SET_TOOL', tool: 'fillErase' }),
-    'mod+enter': () => dispatch({ type: state.editingPieceId ? 'FINISH_EDITING' : 'PUSH_PIECE' }),
-    escape: () => {
+    [HOTKEYS.selectTool]: () => setTool('select'),
+    [HOTKEYS.moveTool]: () => setTool('move'),
+    [HOTKEYS.rotateTool]: () => setTool('rotate'),
+    [HOTKEYS.pivotTool]: () => setTool('pivot'),
+    [HOTKEYS.paintTool]: () => setTool('paint'),
+    [HOTKEYS.paintFillTool]: () => setTool('paintFill'),
+    [HOTKEYS.focusSelection]: () => setFocus((v) => v + 1),
+    [HOTKEYS.drawTool]: () => dispatch({ type: 'SET_TOOL', tool: 'draw' }),
+    [HOTKEYS.eraseTool]: () => dispatch({ type: 'SET_TOOL', tool: 'erase' }),
+    [HOTKEYS.fillTool]: () => dispatch({ type: 'SET_TOOL', tool: 'fill' }),
+    [HOTKEYS.fillEraseTool]: () => dispatch({ type: 'SET_TOOL', tool: 'fillErase' }),
+    [HOTKEYS.pushOrDonePiece]: () =>
+      dispatch({ type: state.editingPieceId ? 'FINISH_EDITING' : 'PUSH_PIECE' }),
+    [HOTKEYS.cancelEditing]: () => {
       dispatch({ type: 'CANCEL_TRANSACTION' });
       setTool('select');
       setPreview(restPreview());
     },
-    'mod+d': () => nodesAction('DUPLICATE_NODE'),
-    delete: () => nodesAction('DELETE_NODE')
+    [HOTKEYS.duplicate]: () => nodesAction('DUPLICATE_NODE'),
+    [HOTKEYS.deleteSelection]: () => nodesAction('DELETE_NODE')
   });
   return (
     <div className={styles.workspace}>

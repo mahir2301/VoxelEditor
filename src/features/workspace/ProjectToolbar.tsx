@@ -13,6 +13,7 @@ interface Props {
   exportGlb: () => void;
   exportMetadata: () => void;
   back: () => void;
+  shortcuts: () => void;
 }
 export default function ProjectToolbar(props: Props) {
   return (
@@ -39,6 +40,14 @@ export default function ProjectToolbar(props: Props) {
           <span className={styles.optionalLabel}>Redo</span>
         </Button>
         <span className={styles.divider} />
+        <Button
+          variant="quiet"
+          onPress={props.shortcuts}
+          aria-label="Keyboard shortcuts"
+          tooltip="Keyboard shortcuts"
+        >
+          <Icon name="keyboard" />
+        </Button>
         <Button variant="quiet" onPress={props.back}>
           <Icon name="folder" />
           Projects

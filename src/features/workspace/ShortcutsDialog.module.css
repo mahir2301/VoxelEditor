@@ -1,0 +1,40 @@
+.groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+.heading {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-secondary);
+  font-size: 12px;
+}
+.row dd {
+  margin: 0;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}
+@media (max-width: 600px) {
+  .groups {
+    grid-template-columns: 1fr;
+  }
+}

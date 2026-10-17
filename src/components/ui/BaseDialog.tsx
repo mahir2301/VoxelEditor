@@ -6,7 +6,7 @@ import styles from './BaseDialog.module.css';
 interface Props {
   isOpen: boolean;
   title: string;
-  description: string;
+  description?: string;
   details?: string;
   size?: 'default' | 'wide';
   onClose?: () => void;
@@ -35,7 +35,7 @@ export default function BaseDialog({
           <Heading slot="title" className={styles.title}>
             {title}
           </Heading>
-          <p className={styles.description}>{description}</p>
+          {description ? <p className={styles.description}>{description}</p> : null}
           {details ? (
             <Disclosure title="Technical details" defaultExpanded={false}>
               <pre className={styles.detailsBody}>{details}</pre>

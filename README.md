@@ -45,7 +45,7 @@ The React Aria hierarchy supports search, arrow-key navigation/collapse, typeahe
 
 ## Interface design
 
-The home screen provides resolution, create, load and autosave controls. The workspace keeps functional labels and actionable warnings; promotional copy, help text, shortcut hints and footers are omitted. Controls and workflow are documented above.
+The home screen provides resolution, create, load and autosave controls. The workspace keeps functional labels and actionable warnings; promotional copy, help text, shortcut hints and footers are omitted. Keyboard shortcuts are available from the toolbar or Shift+H in a grouped dialog with platform-aware TanStack Hotkeys keycaps. Displayed shortcuts and handlers share `features/editor/hotkeys.ts`. Controls and workflow are also documented above.
 
 The editor uses a single slate-blue theme across the home screen, workspace, projection canvases, menus and dialogs. `src/theme/tokens.css` owns colors, spacing, radii, focus and popup shadows; CSS Modules consume those tokens. `src/theme/canvas.ts` reads the same CSS tokens for 2D canvas/Three.js editor accents. Authored model colors, energy appearance and conventional XYZ axis colors remain artwork/presentation data.
 
