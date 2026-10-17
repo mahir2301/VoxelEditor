@@ -172,7 +172,6 @@ export default function Workspace({ state, dispatch, template }: Props) {
             ))}
           </TabList>
           <div className={styles.actions}>
-            <span className={styles.help}>Tower starters</span>
             {(['rapid', 'frost', 'beam'] as const).map((kind) => (
               <Button key={kind} onPress={() => setPendingTemplate(kind)}>
                 {kind[0].toUpperCase() + kind.slice(1)}
@@ -273,7 +272,7 @@ export default function Workspace({ state, dispatch, template }: Props) {
                     )}
                   <Button onPress={() => setFocus((v) => v + 1)}>
                     <Icon name="focus" />
-                    Focus <kbd>F</kbd>
+                    Focus
                   </Button>
                   <Choice
                     label="Snap"
@@ -313,18 +312,6 @@ export default function Workspace({ state, dispatch, template }: Props) {
                 />
               </>
             )}
-            <div className={styles.status}>
-              <span>
-                {mode === 'preview'
-                  ? 'Preview pose · rest pose exports'
-                  : selection.length
-                    ? `${selection.length} selected`
-                    : 'Select geometry in the viewport or hierarchy'}
-              </span>
-              <span>
-                {state.resolution}³ · {state.voxelsPerUnit} voxels/unit
-              </span>
-            </div>
           </main>
           <aside className={styles.sidebar}>
             {mode === 'preview' ? (
@@ -342,30 +329,25 @@ export default function Workspace({ state, dispatch, template }: Props) {
                 editPiece={editPiece}
               />
             )}
-            <Disclosure title={`Model checks · ${messages.length}`}>
-              <div className={styles.diagnostics}>
-                {messages.length ? (
-                  messages.map((message) => (
+            {messages.length > 0 && (
+              <Disclosure title={`Model checks · ${messages.length}`}>
+                <div className={styles.diagnostics}>
+                  {messages.map((message) => (
                     <p key={message}>
                       <Icon name="warning" size={14} />
                       {message}
                     </p>
-                  ))
-                ) : (
-                  <p className={styles.ready}>
-                    <Icon name="check" size={14} />
-                    Assembly is ready to export.
-                  </p>
-                )}
-              </div>
-            </Disclosure>
+                  ))}
+                </div>
+              </Disclosure>
+            )}
           </aside>
         </TabPanel>
       </Tabs>
       <ConfirmDialog
         isOpen={Boolean(pendingPiece)}
         title="Replace current draft?"
-        description="The current projection draft will be replaced. Apply it first if you want to keep it."
+        description="The current projection draft will be replaced."
         cancelLabel="Keep draft"
         confirmLabel="Replace draft"
         onCancel={() => setPendingPiece(null)}
@@ -378,7 +360,7 @@ export default function Workspace({ state, dispatch, template }: Props) {
       <ConfirmDialog
         isOpen={Boolean(pendingTemplate)}
         title="Open tower starter?"
-        description="This replaces the current project. Save a .voxproj file first to keep your work."
+        description="This replaces the current project."
         cancelLabel="Cancel"
         confirmLabel="Open starter"
         onCancel={() => setPendingTemplate(null)}

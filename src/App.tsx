@@ -27,7 +27,6 @@ export default function App() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState<string | null>(null),
     [leaving, setLeaving] = useState(false),
-    [help, setHelp] = useState(false),
     [saved, setSaved] = useState<EditorSnapshot | null>(null);
   const cleanAfterLoad = useRef(false);
   const { state, dispatch, document, autosaveError, canUndo, canRedo } = useVoxelState(active);
@@ -112,7 +111,6 @@ export default function App() {
           },
           'mod+z': () => dispatch({ type: 'UNDO' }),
           'mod+shift+z': () => dispatch({ type: 'REDO' }),
-          'shift+h': () => setHelp(true),
           'shift+escape': back
         }
       : {}
@@ -152,7 +150,6 @@ export default function App() {
         }}
         exportMetadata={exportBindings}
         back={back}
-        help={() => setHelp(true)}
       />
       <Suspense fallback={loadingWorkspace}>
         <Workspace
@@ -181,7 +178,7 @@ export default function App() {
       <ConfirmDialog
         isOpen={leaving}
         title="Leave project?"
-        description="Save a .voxproj file to keep an editable copy. Exporting a GLB does not save the project."
+        description="This project has unsaved changes."
         cancelLabel="Stay"
         confirmLabel="Leave"
         onCancel={() => setLeaving(false)}
@@ -190,13 +187,6 @@ export default function App() {
           setActive(false);
           setHasAutosave(Boolean(loadStateFromStorage()));
         }}
-      />
-      <ConfirmDialog
-        isOpen={help}
-        title="Workspace shortcuts"
-        description="V select · G move · R rotate · B pivot · P paint · Shift+P paint fill · F focus · D draw · E erase · Shift+D fill · Shift+E fill erase · Cmd/Ctrl+Enter apply piece · Cmd/Ctrl+D duplicate · Delete remove · Cmd/Ctrl+Z undo · Cmd/Ctrl+Shift+Z redo · Cmd/Ctrl+S save project · Cmd/Ctrl+E export GLB · Escape cancel manipulation / reset preview. Right drag orbits, middle drag or Shift-right drag pans. Shortcuts pause while editing text."
-        cancelLabel="Close"
-        onCancel={() => setHelp(false)}
       />
     </div>
   );

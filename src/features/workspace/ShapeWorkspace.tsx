@@ -17,7 +17,6 @@ export default function ShapeWorkspace({ state, dispatch }: WorkspaceProps) {
       <div className={styles.shapeHeader}>
         <div>
           <strong>{state.editingPieceId ? 'Edit piece shape' : 'Create a piece'}</strong>
-          <p className={styles.help}>A voxel exists where Front, Side and Top all intersect.</p>
         </div>
         {!state.editingPieceId && (
           <Choice

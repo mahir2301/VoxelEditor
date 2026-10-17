@@ -39,7 +39,6 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
       <div className={styles.inspector}>
         {!node ? (
           <>
-            <p className={styles.help}>Select a part, piece, or socket to edit it.</p>
             <TextInput
               label="Project name / export filename"
               value={state.name}
@@ -71,7 +70,7 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
               }}
             />
             <Choice
-              label="Parent (preserve world pose)"
+              label="Parent"
               value={part?.parentId ?? piece?.partId ?? 'root'}
               options={[
                 ...(part ? [{ id: 'root', label: 'Model root' }] : []),
@@ -90,15 +89,10 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
                 })
               }
             />
-            <p className={styles.help}>
-              {pivot && part
-                ? 'Pivot mode: moving the origin preserves children and geometry.'
-                : 'Position is measured in voxels relative to the parent. Rotation uses degrees.'}
-            </p>
             {(['position', 'rotation'] as const).map((key) => (
               <div key={key}>
                 <div className={styles.subheading}>
-                  {key === 'position' ? 'POSITION / ORIGIN' : 'ROTATION'}
+                  {key === 'position' ? 'Position (voxels)' : 'Rotation (degrees)'}
                 </div>
                 <div className={styles.vector}>
                   {node.transform[key].map((v, axis) => (
@@ -182,7 +176,7 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
                     {part.motion.kind === 'recoil' && (
                       <>
                         <NumberInput
-                          label="Recoil distance (voxels, positive axis)"
+                          label="Recoil distance (voxels)"
                           value={part.motion.distance}
                           min={0}
                           step={0.5}
@@ -246,7 +240,7 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
             )}
             {part?.kind === 'socket' && (
               <Choice
-                label="Socket role (forward is local −Z)"
+                label="Socket role"
                 value={part.role}
                 options={['None', 'ProjectileOrigin', 'EnergyConnector', 'HealthbarAnchor'].map(
                   (role) => ({ id: role, label: role })

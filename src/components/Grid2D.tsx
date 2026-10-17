@@ -1,7 +1,5 @@
-import { formatForDisplay } from '@tanstack/react-hotkeys';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactMouseEvent } from 'react';
-import { HOTKEYS } from '../features/editor/hotkeys';
 import type { EditorTool } from '../features/editor/state/types';
 import { readCanvasTheme } from '../theme/canvas';
 import type { CanvasTheme } from '../theme/canvas';
@@ -342,39 +340,13 @@ export default function Grid2D({
     setFillMask(null);
   }, []);
 
-  const activeToolLabel =
-    tool === 'fill'
-      ? 'Fill'
-      : tool === 'fillErase'
-        ? 'Fill Erase'
-        : tool === 'paint'
-          ? 'Paint'
-          : tool === 'paintFill'
-            ? 'Paint Fill'
-            : tool === 'erase'
-              ? 'Erase'
-              : 'Draw';
-
-  const viewHotkey =
-    view === 'front'
-      ? formatForDisplay(HOTKEYS.viewFront)
-      : view === 'side'
-        ? formatForDisplay(HOTKEYS.viewSide)
-        : formatForDisplay(HOTKEYS.viewTop);
-
   return (
     <section className={styles.root}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <span className={styles.label}>{label}</span>
-          <span className={styles.toolPill}>{activeToolLabel}</span>
         </div>
-        <Button onPress={onViewClick}>
-          <span className={styles.actionLabel}>
-            <span>View</span>
-            <kbd className={styles.hotkey}>{viewHotkey}</kbd>
-          </span>
-        </Button>
+        <Button onPress={onViewClick}>View</Button>
       </header>
 
       <div className={styles.canvasWrap} ref={wrapRef}>

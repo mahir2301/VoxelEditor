@@ -45,7 +45,9 @@ The React Aria hierarchy supports search, arrow-key navigation/collapse, typeahe
 
 ## Interface design
 
-The editor uses a single slate-blue theme across the landing screen, workspace, projection canvases, viewport overlays, menus and dialogs. `src/theme/tokens.css` owns colors, spacing, radii, focus and popup shadows; CSS Modules consume those tokens. `src/theme/canvas.ts` reads the same CSS tokens for 2D canvas/Three.js editor accents. Authored model colors, energy appearance and conventional XYZ axis colors remain artwork/presentation data.
+The home screen provides resolution, create, load and autosave controls. The workspace keeps functional labels and actionable warnings; promotional copy, help text, shortcut hints and footers are omitted. Controls and workflow are documented above.
+
+The editor uses a single slate-blue theme across the home screen, workspace, projection canvases, menus and dialogs. `src/theme/tokens.css` owns colors, spacing, radii, focus and popup shadows; CSS Modules consume those tokens. `src/theme/canvas.ts` reads the same CSS tokens for 2D canvas/Three.js editor accents. Authored model colors, energy appearance and conventional XYZ axis colors remain artwork/presentation data.
 
 All interface controls are built with `react-aria-components`: Tabs, Tree/TreeItem with drag-and-drop hooks, Button/Tooltip, TextField/NumberField/Select, palette ToggleButtonGroup/ColorPicker, Disclosure and Modal/Dialog. Shared wrappers live in `components/ui`; numeric fields include accessible stepper buttons. Both select variants share the same implementation. Interactive states use React Aria data attributes. Icon-only actions have labels/tooltips; focus is visible, dialogs support Escape, motion respects reduced-motion preferences, and compact layouts stack the inspector below the workspace rather than clipping it.
 

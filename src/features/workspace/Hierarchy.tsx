@@ -160,7 +160,7 @@ export default function Hierarchy({
                   className={styles.iconButton}
                   isDisabled={isLocked}
                   aria-label={`Move ${node.name}`}
-                  tooltip="Drag to a rigid part · Enter for keyboard drag"
+                  tooltip="Move"
                 >
                   <Icon name="grip" size={12} />
                 </Button>
@@ -229,14 +229,10 @@ export default function Hierarchy({
         expandedKeys={search ? new Set(state.parts.map((part) => part.id)) : expanded}
         onExpandedChange={setExpanded}
         dragAndDropHooks={dragAndDropHooks}
-        renderEmptyState={() => <p className={styles.help}>No matching parts or pieces.</p>}
+        renderEmptyState={() => <p className={styles.emptyState}>No results</p>}
       >
         {state.parts.filter((part) => !part.parentId).map((part) => renderNode(part))}
       </Tree>
-      <p className={styles.help}>
-        Shift-click to select a range. Drag onto a rigid part to reparent. Double-click a piece to
-        edit its shape.
-      </p>
     </section>
   );
 }

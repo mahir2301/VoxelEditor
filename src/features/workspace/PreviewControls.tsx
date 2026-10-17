@@ -21,7 +21,7 @@ export default function PreviewControls({
 }) {
   return (
     <section className={styles.panel}>
-      <div className={styles.panelTitle}>MOTION REHEARSAL</div>
+      <div className={styles.panelTitle}>PREVIEW</div>
       <div className={styles.inspector}>
         <NumberInput
           label="Yaw (degrees)"
@@ -67,10 +67,6 @@ export default function PreviewControls({
             </Button>
           ))}
         </div>
-        <p className={styles.help}>
-          Temporary preview poses are never saved or exported. The floor grid is one gameplay tile
-          per 16 voxels at the default scale.
-        </p>
       </div>
     </section>
   );

@@ -13,7 +13,6 @@ interface Props {
   exportGlb: () => void;
   exportMetadata: () => void;
   back: () => void;
-  help: () => void;
 }
 export default function ProjectToolbar(props: Props) {
   return (
@@ -31,33 +30,15 @@ export default function ProjectToolbar(props: Props) {
         </div>
       </div>
       <div className={styles.actions}>
-        <Button
-          aria-label="Undo"
-          tooltip="Undo · ⌘ / Ctrl Z"
-          onPress={props.undo}
-          isDisabled={!props.canUndo}
-        >
+        <Button aria-label="Undo" onPress={props.undo} isDisabled={!props.canUndo}>
           <Icon name="undo" />
           <span className={styles.optionalLabel}>Undo</span>
         </Button>
-        <Button
-          aria-label="Redo"
-          tooltip="Redo · ⌘ / Ctrl Shift Z"
-          onPress={props.redo}
-          isDisabled={!props.canRedo}
-        >
+        <Button aria-label="Redo" onPress={props.redo} isDisabled={!props.canRedo}>
           <Icon name="redo" />
           <span className={styles.optionalLabel}>Redo</span>
         </Button>
         <span className={styles.divider} />
-        <Button
-          variant="quiet"
-          onPress={props.help}
-          aria-label="Shortcuts"
-          tooltip="Keyboard shortcuts"
-        >
-          <Icon name="keyboard" />
-        </Button>
         <Button variant="quiet" onPress={props.back}>
           <Icon name="folder" />
           Projects
