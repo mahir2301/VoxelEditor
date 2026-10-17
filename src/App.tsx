@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import LandingScreen from './components/LandingScreen';
 import ConfirmDialog from './components/ui/ConfirmDialog';
 import Icon from './components/ui/Icon';
-import { towerTemplate } from './domain/assembly/templates';
+import { assemblyTemplate } from './domain/assembly/actorTemplates';
 import { HOTKEYS } from './features/editor/hotkeys';
 import { getInitialState } from './features/editor/state/document';
 import { loadStateFromStorage } from './features/editor/state/persistence';
@@ -163,7 +163,7 @@ export default function App() {
           template={(kind) =>
             dispatch({
               type: 'LOAD_PROJECT',
-              state: serializeState({ ...getInitialState(), ...towerTemplate(kind) })
+              state: serializeState({ ...getInitialState(), ...assemblyTemplate(kind) })
             })
           }
         />

@@ -21,7 +21,10 @@ const part = type({
   kind: "'part' | 'socket'",
   transform,
   motion,
-  role: "'None' | 'ProjectileOrigin' | 'EnergyConnector' | 'HealthbarAnchor'",
+  role: "'None' | 'ProjectileOrigin' | 'EnergyConnector' | 'HealthbarAnchor' | 'HandGrip' | 'PrimaryGrip' | 'SupportGrip'",
+  rigRole: "'None' | 'Torso' | 'Head' | 'LeftArm' | 'RightArm' | 'LeftLeg' | 'RightLeg'",
+  teamColor: 'boolean',
+  poses: type({ hold: vector, fire: vector, knockout: vector }),
   energy: 'boolean',
   exportEnabled: 'boolean'
 });
@@ -35,7 +38,8 @@ const piece = type({
   exportEnabled: 'boolean'
 });
 const schema = type({
-  version: '3',
+  version: '4',
+  profile: "'generic' | 'tower' | 'player' | 'weapon'",
   name: 'string',
   resolution: 'number',
   voxelsPerUnit: 'number',
@@ -121,6 +125,16 @@ export function validateProject(project: SerializedProject): SerializedProject {
       'invalid motion limits'
     );
     ensure(
+      Object.values(node.poses)
+        .flat()
+        .every((v) => Number.isFinite(v) && Math.abs(v) <= 360),
+      'invalid pose angles'
+    );
+    ensure(
+      node.kind !== 'socket' || (node.rigRole === 'None' && !node.teamColor),
+      'sockets cannot have rig or appearance roles'
+    );
+    ensure(
       node.kind !== 'socket' || (node.motion.kind === 'none' && !node.energy),
       'sockets cannot own motion or energy geometry'
     );
@@ -155,7 +169,25 @@ export function validateProject(project: SerializedProject): SerializedProject {
 export function parseSerializedProjectOrThrow(raw: unknown): SerializedProject {
   ensure(raw && typeof raw === 'object', 'project must be an object');
   const version = Reflect.get(raw, 'version') ?? 1;
-  if (version === 3) return validateProject(schema.assert(raw));
+  if (version === 4) return validateProject(schema.assert(raw));
+  if (version === 3) {
+    const oldParts: unknown = Reflect.get(raw, 'parts');
+    ensure(Array.isArray(oldParts), 'missing parts');
+    const migrated = {
+      ...raw,
+      version: 4,
+      profile: 'generic',
+      parts: oldParts.map((p: unknown) => {
+        ensure(p && typeof p === 'object', 'invalid part');
+        return Object.assign({}, p, {
+          rigRole: 'None',
+          teamColor: false,
+          poses: { hold: [0, 0, 0], fire: [0, 0, 0], knockout: [0, 0, 0] }
+        });
+      })
+    };
+    return validateProject(schema.assert(migrated));
+  }
   ensure(version === 1 || version === 2, `unsupported project version ${String(version)}`);
   const resolution = Reflect.get(raw, 'resolution') ?? 16;
   ensure(
@@ -171,7 +203,8 @@ export function parseSerializedProjectOrThrow(raw: unknown): SerializedProject {
       ? [{ id: crypto.randomUUID(), name: 'Imported Model', voxels: old.modelVoxels }]
       : [];
   return validateProject({
-    version: 3,
+    version: 4,
+    profile: 'generic',
     name: 'tower',
     resolution: old.resolution,
     voxelsPerUnit: 16,

@@ -4,6 +4,7 @@ import { MOUSE, Object3D } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { readCanvasTheme } from '../../theme/canvas';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
+import { CompanionPreview } from './CompanionPreview';
 import { PartGroup } from './PartGroup';
 import type { SceneProps } from './types';
 import { ViewportCamera } from './ViewportCamera';
@@ -51,7 +52,16 @@ export function AssemblyScene(props: SceneProps) {
           theme.gridSecondary
         ]}
       />
-      <group ref={props.root}>
+      <group
+        ref={props.root}
+        rotation={[
+          0,
+          props.preview && props.state.profile === 'player'
+            ? (props.preview.yaw * Math.PI) / 180
+            : 0,
+          0
+        ]}
+      >
         {props.draft ? (
           <mesh geometry={draftGeometry!}>
             <meshStandardMaterial color={theme.draft} roughness={0.8} />
@@ -62,7 +72,10 @@ export function AssemblyScene(props: SceneProps) {
             .map((part) => <PartGroup key={part.id} part={part} props={props} />)
         )}
       </group>
-      {props.preview && (
+      {props.preview && props.companion && (
+        <CompanionPreview props={props} document={props.companion} />
+      )}
+      {props.preview && props.state.profile !== 'player' && (
         <mesh
           position={[
             Math.sin((props.preview.yaw * Math.PI) / 180) * -24,

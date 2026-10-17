@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import Button from '../../components/ui/Button';
 import { Choice, NumberInput, TextInput } from '../../components/ui/Fields';
+import { rigRoles, socketRoles } from '../../domain/assembly/profiles';
 import { descendants } from '../../domain/assembly/transforms';
+import type { AssetProfile, PoseName } from '../editor/state/types';
 import type { MotionKind, SocketRole, Transform } from '../editor/state/types';
+import AuthoringControls from './AuthoringControls';
 import type { WorkspaceProps } from './types';
 import styles from './Workspace.module.css';
 interface Props extends WorkspaceProps {
@@ -19,13 +23,19 @@ function motionAxis(value: string): 'x' | 'y' | 'z' {
   return value === 'x' || value === 'z' ? value : 'y';
 }
 function socketRole(value: string): SocketRole {
-  return value === 'ProjectileOrigin' || value === 'EnergyConnector' || value === 'HealthbarAnchor'
-    ? value
-    : 'None';
+  return socketRoles.find((role) => role === value) ?? 'None';
 }
-export default function Inspector({ state, dispatch, id, disabled, pivot, editPiece }: Props) {
-  const part = state.parts.find((p) => p.id === id),
-    piece = state.pieces.find((p) => p.id === id),
+export default function Inspector({
+  state,
+  dispatch,
+  id: selectedId,
+  disabled,
+  pivot,
+  editPiece
+}: Props) {
+  const [pose, setPose] = useState<PoseName>('hold');
+  const part = state.parts.find((p) => p.id === selectedId),
+    piece = state.pieces.find((p) => p.id === selectedId),
     node = part ?? piece;
   const changeTransform = (key: keyof Transform, axis: number, value: number) => {
     if (!node) return;
@@ -39,6 +49,20 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
       <div className={styles.inspector}>
         {!node ? (
           <>
+            <Choice
+              label="Model profile"
+              value={state.profile}
+              options={['generic', 'tower', 'player', 'weapon'].map((id) => ({ id, label: id }))}
+              onChange={(profile) =>
+                dispatch({
+                  type: 'SET_PROJECT',
+                  profile:
+                    (['generic', 'tower', 'player', 'weapon'] satisfies AssetProfile[]).find(
+                      (value) => value === profile
+                    ) ?? 'generic'
+                })
+              }
+            />
             <TextInput
               label="Project name / export filename"
               value={state.name}
@@ -109,6 +133,61 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
             ))}
             {part && part.kind === 'part' && (
               <>
+                <Choice
+                  label="Rig role"
+                  value={part.rigRole}
+                  options={rigRoles.map((id) => ({ id, label: id }))}
+                  onChange={(rigRole) =>
+                    dispatch({
+                      type: 'UPDATE_PART',
+                      partId: part.id,
+                      changes: { rigRole: rigRoles.find((value) => value === rigRole) ?? 'None' }
+                    })
+                  }
+                />
+                <Choice
+                  label="Team color"
+                  value={part.teamColor ? 'yes' : 'no'}
+                  options={[
+                    { id: 'no', label: 'Authored colors' },
+                    { id: 'yes', label: 'Team tint' }
+                  ]}
+                  onChange={(v) =>
+                    dispatch({
+                      type: 'UPDATE_PART',
+                      partId: part.id,
+                      changes: { teamColor: v === 'yes' }
+                    })
+                  }
+                />
+                {state.profile === 'player' && (
+                  <>
+                    <Choice
+                      label="Pose offset"
+                      value={pose}
+                      options={['hold', 'fire', 'knockout'].map((id) => ({ id, label: id }))}
+                      onChange={(v) =>
+                        setPose(v === 'fire' ? 'fire' : v === 'knockout' ? 'knockout' : 'hold')
+                      }
+                    />
+                    <div className={styles.vector}>
+                      {part.poses[pose].map((v, a) => (
+                        <NumberInput
+                          key={'XYZ'[a]}
+                          label={`${'XYZ'[a]} degrees`}
+                          value={v}
+                          min={-360}
+                          max={360}
+                          onChange={(angle) => {
+                            const poses = structuredClone(part.poses);
+                            poses[pose][a] = angle;
+                            dispatch({ type: 'UPDATE_PART', partId: part.id, changes: { poses } });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
                 <Choice
                   label="Motion"
                   value={part.motion.kind}
@@ -238,13 +317,41 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
                 />
               </>
             )}
+            {part?.kind === 'socket' &&
+              part.role === 'PrimaryGrip' &&
+              state.profile === 'weapon' && (
+                <>
+                  <Choice
+                    label="Hand pose offset"
+                    value={pose}
+                    options={['hold', 'fire'].map((id) => ({ id, label: id }))}
+                    onChange={(v) =>
+                      setPose(v === 'fire' ? 'fire' : v === 'knockout' ? 'knockout' : 'hold')
+                    }
+                  />
+                  <div className={styles.vector}>
+                    {part.poses[pose].map((v, a) => (
+                      <NumberInput
+                        key={'XYZ'[a]}
+                        label={`${'XYZ'[a]} degrees`}
+                        value={v}
+                        min={-360}
+                        max={360}
+                        onChange={(angle) => {
+                          const poses = structuredClone(part.poses);
+                          poses[pose][a] = angle;
+                          dispatch({ type: 'UPDATE_PART', partId: part.id, changes: { poses } });
+                        }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             {part?.kind === 'socket' && (
               <Choice
                 label="Socket role"
                 value={part.role}
-                options={['None', 'ProjectileOrigin', 'EnergyConnector', 'HealthbarAnchor'].map(
-                  (role) => ({ id: role, label: role })
-                )}
+                options={socketRoles.map((role) => ({ id: role, label: role }))}
                 onChange={(role) =>
                   dispatch({
                     type: 'UPDATE_PART',
@@ -271,6 +378,7 @@ export default function Inspector({ state, dispatch, id, disabled, pivot, editPi
                 }
               />
             )}
+            <AuthoringControls state={state} dispatch={dispatch} node={node} />
             {piece && <Button onPress={() => editPiece(piece.id)}>Edit projection shape</Button>}
             <div className={styles.actions}>
               <Button onPress={() => dispatch({ type: 'DUPLICATE_NODE', id: node.id })}>

@@ -4,6 +4,7 @@ import { newPart } from './model';
 export function towerTemplate(kind: 'rapid' | 'frost' | 'beam'): ProjectDocument {
   const document = emptyDocument(16);
   document.name = kind;
+  document.profile = 'tower';
   document.parts = [];
   document.pieces = [];
   document.palette = ['#52655d', '#83958a', '#d3d9c2', '#78e8ad', '#7cbdd1', '#c6efff', '#334a50'];

@@ -6,10 +6,13 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Disclosure from '../../components/ui/Disclosure';
 import { Choice } from '../../components/ui/Fields';
 import Icon from '../../components/ui/Icon';
+import type { TemplateKind } from '../../domain/assembly/actorTemplates';
 import { diagnostics } from '../../domain/assembly/diagnostics';
 import { newPart } from '../../domain/assembly/model';
+import { profileChecks } from '../../domain/assembly/profiles';
 import { descendants } from '../../domain/assembly/transforms';
 import { HOTKEYS } from '../editor/hotkeys';
+import type { ProjectDocument } from '../editor/state/types';
 import AssemblyViewport from '../viewport/AssemblyViewport';
 import Hierarchy from './Hierarchy';
 import Inspector from './Inspector';
@@ -19,7 +22,7 @@ import type { AssemblyTool, WorkspaceMode, WorkspaceProps } from './types';
 import { useWorkspaceShortcuts } from './useWorkspaceShortcuts';
 import styles from './Workspace.module.css';
 interface Props extends WorkspaceProps {
-  template: (kind: 'rapid' | 'frost' | 'beam') => void;
+  template: (kind: TemplateKind) => void;
 }
 export default function Workspace({ state, dispatch, template }: Props) {
   const [mode, setMode] = useState<WorkspaceMode>('assemble'),
@@ -31,8 +34,9 @@ export default function Workspace({ state, dispatch, template }: Props) {
     [snap, setSnap] = useState(1),
     [focus, setFocus] = useState(0),
     [preview, setPreview] = useState(restPreview),
+    [companion, setCompanion] = useState<ProjectDocument | null>(null),
     [pendingPiece, setPendingPiece] = useState<string | null>(null),
-    [pendingTemplate, setPendingTemplate] = useState<'rapid' | 'frost' | 'beam' | null>(null);
+    [pendingTemplate, setPendingTemplate] = useState<TemplateKind | null>(null);
   const { parts, pieces, frontGrid, sideGrid, topGrid, resolution } = state;
   const selection = useMemo(() => {
     const ids = new Set([...parts, ...pieces].map((p) => p.id));
@@ -75,8 +79,19 @@ export default function Workspace({ state, dispatch, template }: Props) {
     return set;
   }, [isolated, selection, state.parts, state.pieces]);
   const messages = useMemo(
-    () => diagnostics({ parts, pieces, frontGrid, sideGrid, topGrid, resolution }),
-    [parts, pieces, frontGrid, sideGrid, topGrid, resolution]
+    () => [
+      ...diagnostics({
+        parts,
+        pieces,
+        frontGrid,
+        sideGrid,
+        topGrid,
+        resolution,
+        profile: state.profile
+      }),
+      ...profileChecks(state)
+    ],
+    [parts, pieces, frontGrid, sideGrid, topGrid, resolution, state]
   );
   function select(id: string, extend = false) {
     setSelected((prev) =>
@@ -174,9 +189,18 @@ export default function Workspace({ state, dispatch, template }: Props) {
             ))}
           </TabList>
           <div className={styles.actions}>
-            {(['rapid', 'frost', 'beam'] as const).map((kind) => (
-              <Button key={kind} onPress={() => setPendingTemplate(kind)}>
-                {kind[0].toUpperCase() + kind.slice(1)}
+            {(
+              [
+                { id: 'rapid', label: 'Rapid' },
+                { id: 'frost', label: 'Frost' },
+                { id: 'beam', label: 'Beam' },
+                { id: 'player', label: 'Player' },
+                { id: 'weapon-pulse', label: 'Pulse weapon' },
+                { id: 'weapon-arc', label: 'Arc weapon' }
+              ] satisfies { id: TemplateKind; label: string }[]
+            ).map((starter) => (
+              <Button key={starter.id} onPress={() => setPendingTemplate(starter.id)}>
+                {starter.label}
               </Button>
             ))}
           </div>
@@ -258,20 +282,39 @@ export default function Workspace({ state, dispatch, template }: Props) {
               <>
                 <div className={styles.tools}>
                   {mode === 'assemble' &&
-                    (['select', 'move', 'rotate', 'pivot', 'paint', 'paintFill'] as const).map(
-                      (value) => (
-                        <Button
-                          key={value}
-                          isActive={tool === value}
-                          onPress={() => setTool(value)}
-                        >
-                          <Icon name={value === 'paintFill' ? 'fill' : value} />
-                          {value === 'paintFill'
-                            ? 'Paint fill'
-                            : value[0].toUpperCase() + value.slice(1)}
-                        </Button>
-                      )
-                    )}
+                    (
+                      [
+                        'select',
+                        'move',
+                        'rotate',
+                        'pivot',
+                        'paint',
+                        'paintFill',
+                        'voxelAdd',
+                        'voxelErase'
+                      ] as const
+                    ).map((value) => (
+                      <Button key={value} isActive={tool === value} onPress={() => setTool(value)}>
+                        <Icon
+                          name={
+                            value === 'paintFill'
+                              ? 'fill'
+                              : value === 'voxelAdd'
+                                ? 'cube'
+                                : value === 'voxelErase'
+                                  ? 'erase'
+                                  : value
+                          }
+                        />
+                        {value === 'voxelAdd'
+                          ? 'Add voxel'
+                          : value === 'voxelErase'
+                            ? 'Remove voxel'
+                            : value === 'paintFill'
+                              ? 'Paint fill'
+                              : value[0].toUpperCase() + value.slice(1)}
+                      </Button>
+                    ))}
                   <Button onPress={() => setFocus((v) => v + 1)}>
                     <Icon name="focus" />
                     Focus
@@ -311,6 +354,7 @@ export default function Workspace({ state, dispatch, template }: Props) {
                   snap={snap}
                   focusToken={focus}
                   preview={mode === 'preview' ? preview : undefined}
+                  companion={mode === 'preview' ? companion : null}
                 />
               </>
             )}
@@ -319,6 +363,9 @@ export default function Workspace({ state, dispatch, template }: Props) {
             {mode === 'preview' ? (
               <PreviewControls
                 preview={preview}
+                profile={state.profile}
+                companion={companion}
+                setCompanion={setCompanion}
                 change={(changes) => setPreview((prev) => ({ ...prev, ...changes }))}
               />
             ) : (
@@ -361,13 +408,14 @@ export default function Workspace({ state, dispatch, template }: Props) {
       />
       <ConfirmDialog
         isOpen={Boolean(pendingTemplate)}
-        title="Open tower starter?"
+        title="Open assembly starter?"
         description="This replaces the current project."
         cancelLabel="Cancel"
         confirmLabel="Open starter"
         onCancel={() => setPendingTemplate(null)}
         onConfirm={() => {
           template(pendingTemplate!);
+          setCompanion(null);
           setPendingTemplate(null);
           setSelected([]);
           setHidden(new Set());

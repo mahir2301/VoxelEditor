@@ -22,6 +22,9 @@ export function newPart(
     },
     role: 'None',
     energy: false,
+    rigRole: 'None',
+    teamColor: false,
+    poses: { hold: [0, 0, 0], fire: [0, 0, 0], knockout: [0, 0, 0] },
     exportEnabled: true
   };
 }
@@ -114,6 +117,8 @@ export function duplicate(document: ProjectDocument, id: string): ProjectDocumen
         .map((p) =>
           Object.assign(structuredClone(p), {
             id: mapping.get(p.id)!,
+            rigRole: 'None',
+            role: 'None',
             name: p.id === id ? p.name + ' copy' : p.name,
             parentId: p.parentId && mapping.has(p.parentId) ? mapping.get(p.parentId)! : p.parentId
           })

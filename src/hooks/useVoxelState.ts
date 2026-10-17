@@ -7,6 +7,7 @@ export function useVoxelState(active: boolean) {
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const {
     version,
+    profile,
     name,
     resolution,
     voxelsPerUnit,
@@ -22,6 +23,7 @@ export function useVoxelState(active: boolean) {
   const document = useMemo(
     () => ({
       version,
+      profile,
       name,
       resolution,
       voxelsPerUnit,
@@ -36,6 +38,7 @@ export function useVoxelState(active: boolean) {
     }),
     [
       version,
+      profile,
       name,
       resolution,
       voxelsPerUnit,

@@ -1,6 +1,6 @@
 import type { Dispatch, RefObject } from 'react';
 import type { Group, Object3D } from 'three';
-import type { EditorAction, EditorState } from '../editor/state/types';
+import type { EditorAction, EditorState, ProjectDocument } from '../editor/state/types';
 import type { AssemblyTool, PreviewState } from '../workspace/types';
 export interface ViewportProps {
   state: EditorState;
@@ -15,6 +15,7 @@ export interface ViewportProps {
   snap: number;
   focusToken: number;
   preview?: PreviewState;
+  companion?: ProjectDocument | null;
   draft?: Uint8Array;
 }
 export interface SceneProps extends ViewportProps {

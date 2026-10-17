@@ -6,7 +6,7 @@ export function diagnostics(
   document: Pick<
     ProjectDocument,
     'parts' | 'pieces' | 'frontGrid' | 'sideGrid' | 'topGrid' | 'resolution'
-  >
+  > & { profile?: ProjectDocument['profile'] }
 ): string[] {
   const messages: string[] = [];
   const occupied = new Map<string, string>();
@@ -36,12 +36,13 @@ export function diagnostics(
       `${overlap} voxel centers overlap between moving parts. Inspect their clearance in Preview.`
     );
   if (
+    document.profile !== 'player' &&
     !document.parts.some(
       (p) =>
         p.kind === 'socket' && p.role === 'ProjectileOrigin' && exportIncluded(p, document.parts)
     )
   )
-    messages.push('No ProjectileOrigin socket. Add one for tower firing effects.');
+    messages.push('No ProjectileOrigin socket. Add one for firing effects.');
   if (
     document.frontGrid.some(Boolean) ||
     document.sideGrid.some(Boolean) ||

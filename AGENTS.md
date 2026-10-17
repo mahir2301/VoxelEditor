@@ -8,9 +8,9 @@ Vite 8, React 19 with React Compiler, TypeScript, Three.js, React Three Fiber/Dr
 
 ## State ownership
 
-`features/editor/state/types.ts` owns version 3 document/action types. The orchestration reducer delegates projection edits to draftReducer and assembly changes to assemblyReducer. History owns explicit document snapshots, capped at 200. BEGIN/END/CANCEL_TRANSACTION groups strokes/drags. Never mutate shared buffers; copy edited occupancy/colors. UI state must not enter snapshots or exports. Persistence keeps the existing autosave key with a 300 ms debounce; hydration validates external JSON before converting arrays.
+`features/editor/state/types.ts` owns version 4 document/action types. The orchestration reducer delegates projection edits to draftReducer and assembly changes to assemblyReducer. History owns explicit document snapshots, capped at 200. BEGIN/END/CANCEL_TRANSACTION groups strokes/drags. Never mutate shared buffers; copy edited occupancy/colors. UI state must not enter snapshots or exports. Persistence keeps the existing autosave key with a 300 ms debounce; hydration validates external JSON before converting arrays.
 
-Schema/migrations live in projectSchema/legacySchema. Keep version 1/2 migration coverage and reject future versions. Every piece owns local geometry/colors and one part. Part parents must be real parts, never sockets; reject cycles/duplicate IDs/missing parents. Reparent/pivot operations preserve world poses through assembly math. Export names derive from stable IDs, never display names.
+Schema/migrations live in projectSchema/legacySchema. Keep version 1/2/3 migration coverage and reject future versions. Every piece owns local geometry/colors and one part. Part parents must be real parts, never sockets; reject cycles/duplicate IDs/missing parents. Reparent/pivot operations preserve world poses through assembly math. Export names derive from stable IDs, never display names.
 
 ## Geometry and export
 

@@ -53,7 +53,7 @@ export function draftReducer(state: ProjectDocument, action: EditorAction): Proj
       return clearDraft(state);
     case 'PUSH_PIECE':
     case 'FINISH_EDITING': {
-      const voxels = computePieceVoxels(
+      let voxels = computePieceVoxels(
         state.frontGrid,
         state.sideGrid,
         state.topGrid,
@@ -61,6 +61,15 @@ export function draftReducer(state: ProjectDocument, action: EditorAction): Proj
       );
       if (!voxels.some(Boolean)) return state;
       const existing = state.pieces.find((p) => p.id === state.editingPieceId);
+      if (existing) {
+        const original = reconstructGridsFromPiece(existing.voxels, state.resolution);
+        if (
+          (['frontGrid', 'sideGrid', 'topGrid'] as const).every((key) =>
+            original[key].every((v, i) => v === state[key][i])
+          )
+        )
+          voxels = existing.voxels;
+      }
       const colors = existing ? existing.colors.slice() : new Uint8Array(voxels.length);
       const piece = existing
         ? { ...existing, voxels, colors }

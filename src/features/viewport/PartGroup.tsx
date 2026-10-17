@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useMemo } from 'react';
 import { Group, Vector3 } from 'three';
 import { previewTransform } from '../../domain/assembly/motion';
+import { rigTransform } from '../../domain/assembly/rig';
 import { readCanvasTheme } from '../../theme/canvas';
 import type { Part } from '../editor/state/types';
 import { PieceMesh } from './PieceMesh';
@@ -23,7 +24,9 @@ export function PartGroup({
     fire = useRef(-Infinity),
     elapsed = useRef(0),
     motionTime = useRef(0),
-    shot = useRef(0);
+    shot = useRef(0),
+    speed = useRef(0),
+    stride = useRef(0);
   const { state, hidden, locked, isolate, objects, preview } = props;
   const energy = inheritedEnergy || part.energy,
     isLocked = inheritedLock || locked.has(part.id);
@@ -36,21 +39,39 @@ export function PartGroup({
     elapsed.current += delta;
     if (preview.playing && preview.powered) motionTime.current += delta;
     const age = preview.shot ? elapsed.current - fire.current : Infinity;
-    const transform = previewTransform(
-      part,
-      preview.yaw + Math.sin(motionTime.current) * 100,
-      preview.pitch,
-      motionTime.current,
-      age,
-      preview.playing,
-      preview.powered
-    );
+    if (preview.playing) {
+      speed.current +=
+        ((preview.knockedOut ? 0 : preview.speed) - speed.current) * (1 - Math.exp(-20 * delta));
+      stride.current += delta * speed.current * 5;
+    }
+    const transform =
+      state.profile === 'player'
+        ? rigTransform(part, {
+            seconds: motionTime.current,
+            stride: stride.current,
+            speed: speed.current,
+            pitch: preview.pitch,
+            fire: age < 0.16 ? 1 - age / 0.16 : 0,
+            knockedOut: preview.knockedOut,
+            handPose: props.companion?.parts.find((p) => p.role === 'PrimaryGrip')?.poses
+          })
+        : previewTransform(
+            part,
+            preview.yaw + Math.sin(motionTime.current) * 100,
+            preview.pitch,
+            motionTime.current,
+            age,
+            preview.playing,
+            preview.powered
+          );
     ref.current.position.fromArray(transform.position);
     ref.current.rotation.set(...transform.rotation);
   });
   const previewActive = Boolean(preview),
     previewReset = preview?.reset;
   useEffect(() => {
+    speed.current = 0;
+    stride.current = 0;
     elapsed.current = 0;
     motionTime.current = 0;
     fire.current = -Infinity;
@@ -110,6 +131,8 @@ export function PartGroup({
             objects={objects}
             energy={energy}
             powered={preview?.powered ?? true}
+            teamColor={Boolean(preview) && part.teamColor}
+            hit={preview?.hit ?? false}
           />
         ))}
       {state.parts

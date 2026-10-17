@@ -1,7 +1,7 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import { memo, useMemo, useEffect } from 'react';
 import type { Dispatch } from 'react';
-import type { Object3D } from 'three';
+import { Vector3, type Object3D } from 'three';
 import { readCanvasTheme } from '../../theme/canvas';
 import { buildVoxelGeometry } from '../../utils/voxelUtils';
 import type { Piece, EditorState, EditorAction } from '../editor/state/types';
@@ -17,7 +17,9 @@ export const PieceMesh = memo(function PieceMesh({
   tool,
   objects,
   energy,
-  powered
+  powered,
+  teamColor,
+  hit
 }: {
   piece: Piece;
   state: EditorState;
@@ -29,6 +31,8 @@ export const PieceMesh = memo(function PieceMesh({
   objects: Map<string, Object3D>;
   energy: boolean;
   powered: boolean;
+  teamColor: boolean;
+  hit: boolean;
 }) {
   const theme = useMemo(readCanvasTheme, []);
   const geometry = useMemo(
@@ -36,10 +40,30 @@ export const PieceMesh = memo(function PieceMesh({
     [piece.voxels, piece.colors, state.palette, state.resolution]
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
-  function hit(event: ThreeEvent<PointerEvent>, begin: boolean) {
+  function editHit(event: ThreeEvent<PointerEvent>, begin: boolean) {
     if ((event.button !== 0 && begin) || (!begin && !(event.buttons & 1)) || locked) return;
     event.stopPropagation();
-    if (tool === 'paint' || tool === 'paintFill') {
+    if (tool === 'voxelAdd' || tool === 'voxelErase') {
+      if (begin) dispatch({ type: 'BEGIN_TRANSACTION' });
+      const index = geometry.userData.triangleVoxels[event.faceIndex ?? -1];
+      if (index === undefined) return;
+      const n = state.resolution,
+        xyz = [index % n, Math.floor(index / n) % n, Math.floor(index / (n * n))];
+      if (tool === 'voxelAdd') {
+        const normal = event.face?.normal ?? new Vector3();
+        xyz[0] += Math.round(normal.x);
+        xyz[1] += Math.round(normal.y);
+        xyz[2] += Math.round(normal.z);
+      }
+      if (xyz.every((v) => v >= 0 && v < n))
+        dispatch({
+          type: 'EDIT_VOXEL',
+          pieceId: piece.id,
+          index: xyz[0] + xyz[1] * n + xyz[2] * n * n,
+          occupied: tool === 'voxelAdd',
+          colorIndex: state.selectedColor
+        });
+    } else if (tool === 'paint' || tool === 'paintFill') {
       if (begin) dispatch({ type: 'BEGIN_TRANSACTION' });
       const index = geometry.userData.triangleVoxels[event.faceIndex ?? -1];
       if (index !== undefined)
@@ -60,12 +84,12 @@ export const PieceMesh = memo(function PieceMesh({
       geometry={geometry}
       position={piece.transform.position}
       rotation={piece.transform.rotation}
-      onPointerDown={(e) => hit(e, true)}
-      onPointerMove={(e) => hit(e, false)}
+      onPointerDown={(e) => editHit(e, true)}
+      onPointerMove={(e) => editHit(e, false)}
     >
       <meshStandardMaterial
-        vertexColors
-        color={energy && !powered ? '#62736f' : '#ffffff'}
+        vertexColors={!teamColor}
+        color={hit ? '#fff6d7' : teamColor ? '#e5a846' : energy && !powered ? '#62736f' : '#ffffff'}
         emissive={selected ? theme.selection : energy && powered ? '#51bb8c' : '#000000'}
         emissiveIntensity={selected ? 0.35 : 0.22}
         roughness={0.8}

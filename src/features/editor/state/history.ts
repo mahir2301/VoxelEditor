@@ -4,6 +4,7 @@ export const MAX_HISTORY = 200;
 export function createSnapshot(state: ProjectDocument): EditorSnapshot {
   const {
     version,
+    profile,
     name,
     resolution,
     voxelsPerUnit,
@@ -18,6 +19,7 @@ export function createSnapshot(state: ProjectDocument): EditorSnapshot {
   } = state;
   return {
     version,
+    profile,
     name,
     resolution,
     voxelsPerUnit,

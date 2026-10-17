@@ -16,7 +16,18 @@ export interface Transform {
   rotation: Vector;
 }
 export type MotionKind = 'none' | 'yaw' | 'pitch' | 'recoil' | 'spin';
-export type SocketRole = 'None' | 'ProjectileOrigin' | 'EnergyConnector' | 'HealthbarAnchor';
+export type AssetProfile = 'generic' | 'tower' | 'player' | 'weapon';
+export type RigRole = 'None' | 'Torso' | 'Head' | 'LeftArm' | 'RightArm' | 'LeftLeg' | 'RightLeg';
+export type PoseName = 'hold' | 'fire' | 'knockout';
+export type PoseOffsets = Record<PoseName, Vector>;
+export type SocketRole =
+  | 'None'
+  | 'ProjectileOrigin'
+  | 'EnergyConnector'
+  | 'HealthbarAnchor'
+  | 'HandGrip'
+  | 'PrimaryGrip'
+  | 'SupportGrip';
 export interface Motion {
   kind: MotionKind;
   axis: 'x' | 'y' | 'z';
@@ -35,6 +46,9 @@ export interface Part {
   motion: Motion;
   role: SocketRole;
   energy: boolean;
+  rigRole: RigRole;
+  teamColor: boolean;
+  poses: PoseOffsets;
   exportEnabled: boolean;
 }
 export interface Piece {
@@ -47,7 +61,8 @@ export interface Piece {
   exportEnabled: boolean;
 }
 export interface ProjectDocument {
-  version: 3;
+  version: 4;
+  profile: AssetProfile;
   name: string;
   resolution: number;
   voxelsPerUnit: number;
@@ -107,13 +122,28 @@ export type EditorAction =
   | { type: 'SET_CAMERA_VIEW'; view: CameraView }
   | { type: 'LOAD_PROJECT'; state: SerializedProject }
   | { type: 'NEW_PROJECT'; resolution: number }
-  | { type: 'SET_PROJECT'; name?: string; voxelsPerUnit?: number }
+  | { type: 'SET_PROJECT'; name?: string; voxelsPerUnit?: number; profile?: AssetProfile }
+  | { type: 'ADD_BOX'; partId: string; size: Vector }
+  | { type: 'MIRROR_NODE'; id: string; axis: 'x' | 'y' | 'z' }
+  | { type: 'EDIT_VOXEL'; pieceId: string; index: number; occupied: boolean; colorIndex: number }
   | { type: 'SET_DRAFT_PART'; partId: string }
   | { type: 'ADD_PART'; part: Part }
   | {
       type: 'UPDATE_PART';
       partId: string;
-      changes: Partial<Pick<Part, 'name' | 'motion' | 'role' | 'energy' | 'exportEnabled'>>;
+      changes: Partial<
+        Pick<
+          Part,
+          | 'name'
+          | 'motion'
+          | 'role'
+          | 'energy'
+          | 'exportEnabled'
+          | 'rigRole'
+          | 'teamColor'
+          | 'poses'
+        >
+      >;
     }
   | { type: 'TRANSFORM'; id: string; transform: Transform; pivot?: boolean }
   | { type: 'SET_EXPORT'; id: string; enabled: boolean }

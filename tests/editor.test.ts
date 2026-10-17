@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Mesh, Object3D, Vector3 } from 'three';
+import { actorTemplate } from '../src/domain/assembly/actorTemplates';
+import { mirrorNode } from '../src/domain/assembly/authoring';
 import { diagnostics } from '../src/domain/assembly/diagnostics';
 import { duplicate, newPart, reparent, setTransform } from '../src/domain/assembly/model';
 import { previewTransform } from '../src/domain/assembly/motion';
+import { profileChecks } from '../src/domain/assembly/profiles';
+import { rigTransform } from '../src/domain/assembly/rig';
 import { towerTemplate } from '../src/domain/assembly/templates';
 import { exportName, worldMatrix } from '../src/domain/assembly/transforms';
 import { computePieceVoxels } from '../src/domain/voxel/model';
@@ -55,7 +59,7 @@ void test('legacy migration preserves geometry and shared-coordinate paint, incl
     modelColors: colors,
     palette: ['#000000', '#ff0000']
   });
-  assert.equal(migrated.version, 3);
+  assert.equal(migrated.version, 4);
   assert.deepEqual(
     migrated.pieces.map((candidate) => candidate.colors[0]),
     [1, 1]
@@ -327,4 +331,113 @@ void test('undoing a shape stroke restores the open editing draft; cancelling dr
   state = reducer(state, { type: 'UNDO' });
   assert.equal(state.editingPieceId, original.editingPieceId);
   assert.deepEqual(state.topGrid, original.topGrid);
+});
+
+void test('v3 migration preserves tower mechanics and IDs without inferring the profile', () => {
+  const current = serializeState(fixture());
+  const legacy = {
+    ...current,
+    version: 3,
+    parts: current.parts.map(
+      ({ rigRole: _rigRole, teamColor: _teamColor, poses: _poses, ...p }) => p
+    )
+  };
+  const migrated = parseSerializedProjectOrThrow(legacy);
+  assert.equal(migrated.version, 4);
+  assert.equal(migrated.profile, 'generic');
+  assert.deepEqual(
+    migrated.parts.map((p) => [p.id, p.motion, p.transform]),
+    current.parts.map((p) => [p.id, p.motion, p.transform])
+  );
+});
+void test('player and weapon templates export stable, reachable version 2 bindings', () => {
+  for (const kind of ['player', 'weapon-pulse', 'weapon-arc'] as const) {
+    const doc = actorTemplate(kind),
+      saved = serializeState(doc);
+    assert.deepEqual(parseSerializedProjectOrThrow(saved), saved);
+    const scene = buildAssemblyScene(doc),
+      metadata = presentationMetadata(doc);
+    assert.equal(metadata.version, 2);
+    assert.equal(profileChecks(doc).length, 0);
+    for (const binding of [...(metadata.rig ?? []), ...metadata.sockets]) {
+      let node: Object3D = scene;
+      for (const segment of binding.path.split('/'))
+        node = node.children.find((child) => child.name === segment)!;
+      assert.ok(node, binding.path);
+    }
+    disposeAssemblyScene(scene);
+  }
+});
+void test('profile exports reject duplicate, excluded and moving attachment bindings', () => {
+  const doc = actorTemplate('player');
+  doc.parts.find((p) => p.rigRole === 'Head')!.rigRole = 'Torso';
+  assert.throws(() => presentationMetadata(doc), /Head|Torso/);
+  const weapon = actorTemplate('weapon-pulse');
+  weapon.parts.find((p) => p.role === 'PrimaryGrip')!.exportEnabled = false;
+  assert.throws(() => presentationMetadata(weapon), /PrimaryGrip/);
+  const moving = actorTemplate('weapon-pulse');
+  moving.parts[0].motion.kind = 'spin';
+  assert.throws(() => presentationMetadata(moving), /must not move/);
+});
+void test('direct voxel edits own buffers and unchanged projection apply preserves carved holes', () => {
+  let state = getInitialState(4);
+  state = reducer(state, { type: 'ADD_BOX', partId: state.parts[0].id, size: [4, 4, 4] });
+  const piece = state.pieces[0],
+    before = piece.voxels;
+  state = reducer(state, {
+    type: 'EDIT_VOXEL',
+    pieceId: piece.id,
+    index: 21,
+    occupied: false,
+    colorIndex: 0
+  });
+  assert.equal(before[21], 1);
+  assert.equal(state.pieces[0].voxels[21], 0);
+  state = reducer(state, { type: 'LOAD_PIECE_FOR_EDITING', pieceId: piece.id });
+  state = reducer(state, { type: 'FINISH_EDITING' });
+  assert.equal(state.pieces[0].voxels[21], 0);
+  state = reducer(state, { type: 'UNDO' });
+  assert.equal(state.editingPieceId, piece.id);
+});
+void test('mirroring reflects rotated subtree geometry and paint without negative scales', () => {
+  const doc = actorTemplate('player'),
+    arm = doc.parts.find((p) => p.rigRole === 'RightArm')!;
+  arm.transform.rotation = [0.2, 0.3, -0.4];
+  const before = doc.pieces.find((p) => p.partId === arm.id)!;
+  const result = mirrorNode(doc, arm.id, 'x');
+  const copy = result.pieces.at(-1)!;
+  const originalPosition = new Vector3(0.5, 0.5, 0.5).applyMatrix4(
+    worldMatrix(before.id, doc.parts, doc.pieces)
+  );
+  const reflected = new Vector3(-0.5, 0.5, 0.5).applyMatrix4(
+    worldMatrix(copy.id, result.parts, result.pieces)
+  );
+  assert.ok(
+    reflected.distanceTo(new Vector3(-originalPosition.x, originalPosition.y, originalPosition.z)) <
+      1e-8
+  );
+  assert.equal(worldMatrix(copy.id, result.parts, result.pieces).determinant() > 0, true);
+  const n = doc.resolution;
+  for (let i = 0; i < before.voxels.length; i++) {
+    const j = n - 1 - (i % n) + Math.floor(i / n) * n;
+    assert.equal(before.voxels[i], copy.voxels[j]);
+    assert.equal(before.colors[i], copy.colors[j]);
+  }
+});
+void test('rig motion layers offsets from rest and resetting has no transform drift', () => {
+  const part = actorTemplate('player').parts.find((p) => p.rigRole === 'LeftLeg')!;
+  const rest = structuredClone(part.transform);
+  const sample = {
+    seconds: 1,
+    stride: Math.PI / 2,
+    speed: 4,
+    pitch: 0,
+    fire: 0,
+    knockedOut: false
+  };
+  const pose = rigTransform(part, sample);
+  assert.ok(Math.abs(pose.rotation[0] - 0.55) < 1e-8);
+  for (let i = 0; i < 1000; i++) rigTransform(part, sample);
+  assert.deepEqual(part.transform, rest);
+  matrixClose(rigTransform(part, { ...sample, stride: 0, speed: 0 }).rotation, rest.rotation);
 });

@@ -1,9 +1,34 @@
+import { boxPiece, mirrorNode } from '../../../domain/assembly/authoring';
 import { duplicate, reparent, setTransform } from '../../../domain/assembly/model';
 import { descendants } from '../../../domain/assembly/transforms';
 import { fillModelColor } from '../../../domain/voxel/painting';
 import type { EditorAction, ProjectDocument } from './types';
 export function assemblyReducer(state: ProjectDocument, action: EditorAction): ProjectDocument {
   switch (action.type) {
+    case 'ADD_BOX':
+      return state.parts.some((p) => p.id === action.partId && p.kind === 'part')
+        ? { ...state, pieces: [...state.pieces, boxPiece(state, action.partId, action.size)] }
+        : state;
+    case 'MIRROR_NODE':
+      return mirrorNode(state, action.id, action.axis);
+    case 'EDIT_VOXEL': {
+      const piece = state.pieces.find((p) => p.id === action.pieceId);
+      if (
+        !piece ||
+        action.index < 0 ||
+        action.index >= piece.voxels.length ||
+        !Number.isInteger(action.index)
+      )
+        return state;
+      const voxels = piece.voxels.slice(),
+        colors = piece.colors.slice();
+      voxels[action.index] = action.occupied ? 1 : 0;
+      if (action.occupied) colors[action.index] = action.colorIndex;
+      return {
+        ...state,
+        pieces: state.pieces.map((p) => (p.id === piece.id ? { ...p, voxels, colors } : p))
+      };
+    }
     case 'SET_EXPORT':
       return {
         ...state,
@@ -97,6 +122,7 @@ export function assemblyReducer(state: ProjectDocument, action: EditorAction): P
       return {
         ...state,
         name: action.name ?? state.name,
+        profile: action.profile ?? state.profile,
         voxelsPerUnit: action.voxelsPerUnit ?? state.voxelsPerUnit
       };
     default:
